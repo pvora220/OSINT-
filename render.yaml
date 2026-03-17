@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: matrix-osint
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: ""
+    startCommand: node backend/server.js
+    autoDeploy: true
+    envVars:
+      - key: VERIPHONE_API_KEY
+        sync: false

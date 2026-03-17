@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATRIX OSINT - Neural Network Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="matrix-osint-integrated.css?v=20260317-55">
+</head>
+<body>
+    <canvas id="matrix-canvas"></canvas>
+    <iframe id="background-threat-map" class="background-threat-map" title="Background live threat map" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" tabindex="-1" aria-hidden="true"></iframe>
+    <div id="background-cyber-grid" class="background-cyber-grid" aria-hidden="true"></div>
+    <canvas id="background-threat-globe-canvas" class="background-threat-globe-canvas" aria-hidden="true"></canvas>
+    <div class="glitch-layer" aria-hidden="true"></div>
+
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2 class="auth-title">ACCESS CONTROL</h2>
+            <p class="auth-subtitle">Login or register to use the tools.</p>
+
+            <div class="auth-tabs">
+                <button id="auth-tab-login" class="auth-tab-btn active" type="button" onclick="switchAuthTab('login')">Login</button>
+                <button id="auth-tab-register" class="auth-tab-btn" type="button" onclick="switchAuthTab('register')">Register</button>
+            </div>
+
+            <form id="auth-login-form" class="auth-form active" action="javascript:void(0);">
+                <input id="login-username" type="text" class="input-terminal auth-input" placeholder="Username" autocomplete="username">
+                <input id="login-password" type="password" class="input-terminal auth-input" placeholder="Password" autocomplete="current-password">
+                <button type="submit" class="btn-terminal" style="width: 100%;">LOGIN</button>
+            </form>
+
+            <form id="auth-register-form" class="auth-form" action="javascript:void(0);">
+                <input id="register-username" type="text" class="input-terminal auth-input" placeholder="Choose username" autocomplete="username">
+                <input id="register-password" type="password" class="input-terminal auth-input" placeholder="Choose password" autocomplete="new-password">
+                <input id="register-confirm-password" type="password" class="input-terminal auth-input" placeholder="Confirm password" autocomplete="new-password">
+                <button type="submit" class="btn-terminal" style="width: 100%;">CREATE ACCOUNT</button>
+            </form>
+
+            <p id="auth-message" class="auth-message"></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 data-text="MATRIX OSINT">MATRIX OSINT</h1>
+            <p class="subtitle">Neural Network Intelligence System</p>
+        </header>
+
+        <div id="session-bar" class="session-bar">
+            <div id="session-info" class="session-info"></div>
+            <button class="btn-terminal btn-small" type="button" onclick="logoutUser()">LOGOUT</button>
+        </div>
+
+        <div class="terminal-tabs">
+            <button class="terminal-tab active" onclick="switchTab(0, 'home')">> Home</button>
+            <button class="terminal-tab" onclick="switchTab(1, 'dashboard')">> Dashboard</button>
+            <button class="terminal-tab" onclick="switchTab(2, 'tools')">> Active Tools</button>
+            <button class="terminal-tab" onclick="switchTab(3, 'reference')">> Reference Database</button>
+            <button class="terminal-tab" onclick="switchTab(4, 'account')">> Account</button>
+            <button class="terminal-tab" onclick="switchTab(5, 'admin')">> Admin Panel</button>
+        </div>
+
+        <!-- Home Tab -->
+        <div id="home-tab" class="tab-content active">
+            <h2 class="section-header">Home Command Center</h2>
+
+            <div class="threat-map-panel">
+                <div class="threat-map-head">
+                    <div>
+                        <div class="threat-map-title">Live Threat Map</div>
+                        <div class="threat-map-subtitle">Monitor real-time global cyber activity feeds.</div>
+                    </div>
+                    <div class="threat-map-controls">
+                        <label class="threat-map-label" for="threat-map-source">Source</label>
+                        <select id="threat-map-source" class="input-terminal threat-map-select">
+                            <option value="checkpoint">Check Point ThreatMap</option>
+                            <option value="kaspersky">Kaspersky Cybermap</option>
+                        </select>
+                        <label class="threat-map-label" for="background-mode">Background</label>
+                        <select id="background-mode" class="input-terminal threat-map-select threat-map-bg-select">
+                            <option value="matrix">Matrix Rain (Current)</option>
+                            <option value="threat">Live Threat Map</option>
+                            <option value="grid">Cyber Grid</option>
+                        </select>
+                        <button id="threat-map-sound-toggle" class="btn-terminal btn-small threat-map-sound-btn" type="button" aria-pressed="true">Sound: ON</button>
+                    </div>
+                </div>
+                <div id="threat-map-status" class="threat-map-status">Loading live threat map...</div>
+                <div class="threat-map-frame-wrap">
+                    <div id="threat-map-fallback" class="threat-map-fallback" aria-hidden="true">
+                        <canvas id="threat-map-fallback-canvas" class="threat-map-fallback-canvas"></canvas>
+                        <div class="kaspersky-shell">
+                            <div class="kaspersky-topbar">
+                                <div class="kaspersky-brand">CYBERTHREAT LIVE MAP</div>
+                                <div class="kaspersky-locale">EN</div>
+                                <button type="button" class="kaspersky-cta">Protect Yourself</button>
+                            </div>
+                            <div class="kaspersky-nav">
+                                <span class="active">MAP</span>
+                                <span>STATISTICS</span>
+                                <span>DATA SOURCES</span>
+                                <span>BUZZ</span>
+                                <span>WIDGET</span>
+                            </div>
+                            <aside class="kaspersky-sidepanel">
+                                <div class="kaspersky-country-head">
+                                    <div id="kaspersky-country-name" class="kaspersky-country-name">SRI LANKA</div>
+                                    <div class="kaspersky-country-rank"># <span id="kaspersky-country-rank">37</span> MOST-ATTACKED COUNTRY</div>
+                                </div>
+                                <div id="kaspersky-stats" class="kaspersky-stats"></div>
+                                <div class="kaspersky-side-footer">Detections discovered since 00:00 GMT</div>
+                            </aside>
+                            <div class="kaspersky-toolbar">
+                                <span>G</span>
+                                <span>L</span>
+                                <span>+</span>
+                                <span>-</span>
+                                <span class="kaspersky-demo">DEMO OFF</span>
+                            </div>
+                            <div id="kaspersky-legend" class="kaspersky-legend"></div>
+                        </div>
+                    </div>
+                    <iframe
+                        id="threat-map-frame"
+                        class="threat-map-frame"
+                        title="Live threat map"
+                        loading="lazy"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="threat-map-links">
+                    <a id="threat-map-open-link" href="#" target="_blank" rel="noopener noreferrer">Open map in new tab</a>
+                </div>
+                <div class="threat-map-log-wrap">
+                    <div class="threat-map-log-head">Threat Map Log</div>
+                    <div id="threat-map-log" class="threat-map-log"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content">
+            <h2 class="section-header">Operational Dashboard</h2>
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Current User</div>
+                    <div class="dashboard-value" id="dashboard-user">Guest</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Role</div>
+                    <div class="dashboard-value" id="dashboard-role">N/A</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Reference Tools</div>
+                    <div class="dashboard-value" id="dashboard-reference-count">--</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Categories</div>
+                    <div class="dashboard-value" id="dashboard-category-count">--</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Users Registered</div>
+                    <div class="dashboard-value" id="dashboard-user-count">--</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Activity Events</div>
+                    <div class="dashboard-value" id="dashboard-activity-count">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Tools Tab -->
+        <div id="tools-tab" class="tab-content">
+            <h2 class="section-header">Field Dossier Workspace</h2>
+
+            <div id="active-tools-summary" class="dashboard-grid"></div>
+
+            <div id="tools-grid" class="tools-grid">
+                <!-- Google Dork Builder -->
+                <div id="tool-dork" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🧠</span>
+                        <h3 class="tool-title">Google Dork Builder</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Assemble precision search chains with profiles, operator controls, and launch-ready query packages for field collection.</p>
+                        <input type="text" class="input-terminal" id="dork-target-input" placeholder="Subject domain or keyword (e.g., example.com)">
+                        <select id="dork-profile-select" class="input-terminal" style="margin-top: 0.6rem;">
+                            <option value="recon">Profile: Recon Baseline</option>
+                            <option value="bug-bounty">Profile: Bug Bounty Recon</option>
+                            <option value="vuln-hunt">Profile: Vulnerability Hunting</option>
+                            <option value="doc-leaks">Profile: Document / Data Leaks</option>
+                            <option value="cloud-assets">Profile: Cloud Asset Exposure</option>
+                            <option value="credentials">Profile: Credential Exposure Signals</option>
+                        </select>
+                        <input type="text" class="input-terminal" id="dork-exact-input" placeholder="Exact phrase artifact (optional)">
+                        <input type="text" class="input-terminal" id="dork-filetype-input" placeholder="Filetype filters (optional: pdf,docx,xlsx)">
+                        <input type="text" class="input-terminal" id="dork-inurl-input" placeholder="URL signal tokens (optional: admin,api,v1)">
+                        <input type="text" class="input-terminal" id="dork-intitle-input" placeholder="Title phrase signal (optional)">
+                        <input type="text" class="input-terminal" id="dork-exclude-input" placeholder="Exclude terms (optional)">
+                        <button class="btn-terminal" onclick="generateGoogleDorks()">COMPILE QUERIES</button>
+                        <div id="dork-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <div id="tool-bounty-dorks" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🎯</span>
+                        <h3 class="tool-title">Bug Bounty Dork Packs</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Load curated recon packs to surface disclosure pages, reward signals, security contacts, and off-platform program traces.</p>
+                        <input type="text" class="input-terminal" id="bounty-dork-target-input" placeholder="Subject domain or keyword (e.g., example.com)">
+                        <div class="bounty-dork-filter-row">
+                            <input type="text" class="input-terminal bounty-dork-filter-input" id="bounty-dork-pack-filter" placeholder="Filter pack files (e.g., gov, edu, security.txt)">
+                            <button type="button" class="btn-terminal btn-small bounty-dork-reset-btn" onclick="resetBugBountyPackFilters()">RESET</button>
+                        </div>
+                        <div id="bounty-dork-tag-chips" class="bounty-dork-tag-chips" aria-label="Bug bounty pack tags"></div>
+                        <select id="bounty-dork-pack-select" class="input-terminal" style="margin-top: 0.6rem;">
+                            <option value="">Loading recon pack files...</option>
+                        </select>
+                        <p id="bounty-dork-pack-status" class="tool-desc" style="margin-top: -0.2rem; margin-bottom: 1rem;">Loading pack index file...</p>
+                        <input type="text" class="input-terminal" id="bounty-dork-extra-excludes" placeholder="Additional exclusions (optional)">
+                        <button class="btn-terminal" onclick="generateBugBountyDorks()">BUILD PACK</button>
+                        <button class="btn-terminal" onclick="pushBugBountyPackToBuilder()" style="margin-top: 0.75rem;">SEND TO DORK BUILDER</button>
+                        <div id="bounty-dork-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- IP Intelligence -->
+                <div id="tool-ip" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🌐</span>
+                        <h3 class="tool-title">IP Intelligence Scanner</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Trace an IP through geography, ASN ownership, and network context for rapid attribution and triage.</p>
+                        <input type="text" class="input-terminal" id="ip-input" placeholder="Enter subject IP (e.g., 8.8.8.8)">
+                        <button class="btn-terminal" onclick="analyzeIP()">RUN TRACE</button>
+                        <div id="ip-loading" class="loading-terminal"><span class="terminal-spinner"></span> TRACING NETWORK FOOTPRINT...</div>
+                        <div id="ip-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Email Analysis -->
+                <div id="tool-email" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">📧</span>
+                        <h3 class="tool-title">Email Analysis Engine</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Profile email artifacts for formatting integrity, provider context, and disposable-risk indicators.</p>
+                        <input type="email" class="input-terminal" id="email-input" placeholder="Enter email artifact">
+                        <button class="btn-terminal" onclick="validateEmail()">PROFILE EMAIL</button>
+                        <div id="email-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Username OSINT -->
+                <div id="tool-username" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">👤</span>
+                        <h3 class="tool-title">Username Intelligence</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Pivot one handle across multiple platforms to surface identity reuse and social footprint overlap.</p>
+                        <input type="text" class="input-terminal" id="username-input" placeholder="Enter handle or alias">
+                        <button class="btn-terminal" onclick="searchUsername()">TRACE IDENTITY</button>
+                        <div id="username-loading" class="loading-terminal"><span class="terminal-spinner"></span> TRACING IDENTITY FOOTPRINT...</div>
+                        <div id="username-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Hash Decoder -->
+                <div id="tool-hash" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔐</span>
+                        <h3 class="tool-title">Hash Decoder</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Classify suspicious hashes, identify likely algorithms, and flag weak or legacy signatures.</p>
+                        <input type="text" class="input-terminal" id="hash-input" placeholder="Enter hash artifact">
+                        <button class="btn-terminal" onclick="identifyHash()">INSPECT HASH</button>
+                        <div id="hash-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Domain Analyzer -->
+                <div id="tool-domain" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔍</span>
+                        <h3 class="tool-title">Domain Intelligence</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Profile a domain through registration clues, record structure, and ownership-linked intelligence.</p>
+                        <input type="text" class="input-terminal" id="domain-input" placeholder="Enter subject domain (e.g., example.com)">
+                        <button class="btn-terminal" onclick="analyzeDomain()">PROFILE DOMAIN</button>
+                        <div id="domain-loading" class="loading-terminal"><span class="terminal-spinner"></span> BUILDING DOMAIN PROFILE...</div>
+                        <div id="domain-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Port Scanner -->
+                <div id="tool-port" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🛡️</span>
+                        <h3 class="tool-title">Port Scanner</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Probe exposed service ports and map the visible attack surface around a host or address.</p>
+                        <input type="text" class="input-terminal" id="port-input" placeholder="Enter host or IP subject">
+                        <button class="btn-terminal" onclick="scanPorts()">SCAN PORTS</button>
+                        <div id="port-loading" class="loading-terminal"><span class="terminal-spinner"></span> SURVEYING OPEN SURFACE...</div>
+                        <div id="port-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Phone Lookup -->
+                <div id="tool-phone" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">📱</span>
+                        <h3 class="tool-title">Phone Intelligence</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Inspect number structure, carrier metadata, and regional routing clues for telecom attribution.</p>
+                        <input type="text" class="input-terminal" id="phone-input" placeholder="Enter telecom artifact">
+                        <button class="btn-terminal" onclick="analyzePhone()">LOOKUP NUMBER</button>
+                        <div id="phone-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- URL Analyzer -->
+                <div id="tool-url" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔗</span>
+                        <h3 class="tool-title">URL Intelligence</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Break a URL into transport, host, path, and parameter evidence for quick risk review.</p>
+                        <input type="text" class="input-terminal" id="url-input" placeholder="Enter URL artifact">
+                        <button class="btn-terminal" onclick="analyzeURL()">ANALYZE URL</button>
+                        <div id="url-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Subdomain Finder -->
+                <div id="tool-subdomain" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🗺️</span>
+                        <h3 class="tool-title">Subdomain Scanner</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Surface likely subdomains and map exposed naming patterns across a target namespace.</p>
+                        <input type="text" class="input-terminal" id="subdomain-input" placeholder="Enter subject domain">
+                        <button class="btn-terminal" onclick="findSubdomains()">FIND SUBDOMAINS</button>
+                        <div id="subdomain-loading" class="loading-terminal"><span class="terminal-spinner"></span> SURFACING SUBDOMAIN TRAILS...</div>
+                        <div id="subdomain-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- MAC Address Lookup -->
+                <div id="tool-mac" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">💻</span>
+                        <h3 class="tool-title">MAC Address Lookup</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Resolve hardware identifiers into vendor fingerprints and probable device lineage.</p>
+                        <input type="text" class="input-terminal" id="mac-input" placeholder="Enter hardware artifact (e.g., 00:1A:2B:3C:4D:5E)">
+                        <button class="btn-terminal" onclick="lookupMAC()">PROFILE DEVICE</button>
+                        <div id="mac-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Base64 Decoder -->
+                <div id="tool-base64" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔓</span>
+                        <h3 class="tool-title">Base64 Decoder</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Unwrap or package Base64 content while preserving the original artifact trail.</p>
+                        <input type="text" class="input-terminal" id="base64-input" placeholder="Enter raw text or Base64 artifact">
+                        <button class="btn-terminal" onclick="decodeBase64()">DECODE</button>
+                        <button class="btn-terminal" onclick="encodeBase64()" style="margin-left: 0.5rem;">ENCODE</button>
+                        <div id="base64-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- DNS Lookup -->
+                <div id="tool-dns" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">📡</span>
+                        <h3 class="tool-title">DNS Resolver</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Interrogate DNS records and delegation paths to expose routing and control relationships.</p>
+                        <input type="text" class="input-terminal" id="dns-input" placeholder="Enter subject domain">
+                        <button class="btn-terminal" onclick="lookupDNS()">RESOLVE DNS</button>
+                        <div id="dns-loading" class="loading-terminal"><span class="terminal-spinner"></span> QUERYING RECORD LAYERS...</div>
+                        <div id="dns-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- JWT Decoder -->
+                <div id="tool-jwt-decoder" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">🪙</span><h3 class="tool-title">JWT Decoder</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Unseal token headers and claims to inspect issuers, audiences, and embedded payload evidence.</p>
+                        <textarea class="input-terminal" id="jwt-decoder-input" placeholder="Paste token artifact" style="min-height: 100px;"></textarea>
+                        <button class="btn-terminal" onclick="decodeJwtLive()">UNSEAL TOKEN</button>
+                        <div id="jwt-decoder-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- HTML Entity Codec -->
+                <div id="tool-html-entity" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">&lt;/&gt;</span><h3 class="tool-title">HTML Entity Codec</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Translate encoded markup artifacts to reveal buried content or safely re-encode suspicious strings.</p>
+                        <textarea class="input-terminal" id="html-entity-input" placeholder="Enter text or encoded markup artifact" style="min-height: 100px;"></textarea>
+                        <button class="btn-terminal" onclick="encodeHtmlEntitiesLive()">ENCODE</button>
+                        <button class="btn-terminal" onclick="decodeHtmlEntitiesLive()">DECODE</button>
+                        <div id="html-entity-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- String Similarity -->
+                <div id="tool-string-similarity" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">≈</span><h3 class="tool-title">String Similarity</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Measure textual overlap between two artifacts to detect reuse, cloning, or near-match content.</p>
+                        <textarea class="input-terminal" id="similarity-input-a" placeholder="Artifact A" style="min-height: 80px;"></textarea>
+                        <textarea class="input-terminal" id="similarity-input-b" placeholder="Artifact B" style="min-height: 80px;"></textarea>
+                        <button class="btn-terminal" onclick="compareStringSimilarityLive()">COMPARE SIMILARITY</button>
+                        <div id="similarity-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Text Diff Checker -->
+                <div id="tool-text-diff" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">Δ</span><h3 class="tool-title">Text Diff Checker</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Diff two text bodies line by line to isolate edits, insertions, and suspicious drift.</p>
+                        <textarea class="input-terminal" id="diff-input-a" placeholder="Source artifact" style="min-height: 80px;"></textarea>
+                        <textarea class="input-terminal" id="diff-input-b" placeholder="Comparison artifact" style="min-height: 80px;"></textarea>
+                        <button class="btn-terminal" onclick="compareTextDiffLive()">COMPARE DIFF</button>
+                        <div id="diff-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Lorem Ipsum Generator -->
+                <div id="tool-lorem-generator" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">📰</span><h3 class="tool-title">Lorem Ipsum Generator</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Generate controlled filler copy for interface rehearsals, mock evidence, and layout stress tests.</p>
+                        <input type="text" class="input-terminal" id="lorem-count-input" value="3" placeholder="Brief count">
+                        <button class="btn-terminal" onclick="generateLoremLive()">GENERATE LOREM</button>
+                        <div id="lorem-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- User Agent Analyzer -->
+                <div id="tool-user-agent" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">🧭</span><h3 class="tool-title">User Agent Analyzer</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Extract browser, platform, and device hints from user agent strings for environment profiling.</p>
+                        <textarea class="input-terminal" id="user-agent-input" placeholder="Leave blank to inspect current browser signature" style="min-height: 100px;"></textarea>
+                        <button class="btn-terminal" onclick="analyzeUserAgentLive()">ANALYZE AGENT</button>
+                        <div id="user-agent-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Coordinate Converter -->
+                <div id="tool-coordinate-converter" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">🗺️</span><h3 class="tool-title">Coordinate Converter</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Convert raw location points into alternate coordinate formats for mapping and reporting workflows.</p>
+                        <input type="text" class="input-terminal" id="coordinate-input" placeholder="Coordinate artifact (e.g., 40.7128,-74.0060)">
+                        <button class="btn-terminal" onclick="convertCoordinatesLive()">CONVERT COORDINATES</button>
+                        <div id="coordinate-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Timezone Converter -->
+                <div id="tool-timezone-converter" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">🕒</span><h3 class="tool-title">Timezone Converter</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Normalize timestamps across local, UTC, and ISO formats for correlation and timeline work.</p>
+                        <input type="text" class="input-terminal" id="timezone-input" placeholder="Optional timestamp artifact (e.g., 2026-03-16T12:00:00)">
+                        <button class="btn-terminal" onclick="convertTimezoneLive()">CONVERT TIMEZONE</button>
+                        <div id="timezone-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- SQL Formatter -->
+                <div id="tool-sql-formatter" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">🗃️</span><h3 class="tool-title">SQL Formatter</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Normalize raw SQL into readable structure to inspect intent, joins, filters, and extraction logic.</p>
+                        <textarea class="input-terminal" id="sql-formatter-input" placeholder="Paste raw SQL artifact" style="min-height: 100px;"></textarea>
+                        <button class="btn-terminal" onclick="formatSqlLive()">NORMALIZE SQL</button>
+                        <div id="sql-formatter-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- Cookie Analyzer -->
+                <div id="tool-cookie-analyzer" class="tool-terminal">
+                    <div class="tool-header"><span class="tool-icon">🍪</span><h3 class="tool-title">Cookie Analyzer</h3></div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Inspect browser cookies and key-value artifacts to surface session tokens and tracking residue.</p>
+                        <button class="btn-terminal" onclick="analyzeCookiesLive()">ANALYZE COOKIES</button>
+                        <div id="cookie-analyzer-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- ===== CATEGORY DIVIDER: VULNERABILITY INTELLIGENCE ===== -->
+                <div id="vuln-category" style="margin: 2.5rem 0 1.5rem 0; padding: 1.2rem 1rem; border-left: 5px solid #00ffff; background: rgba(0, 255, 255, 0.08);">
+                    <h3 style="color: #00ffff; font-size: 1.15rem; margin: 0 0 0.3rem 0; text-transform: uppercase; letter-spacing: 2px;">🔴 THREAT DOSSIERS</h3>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">Cross-reference CVE intelligence, exploited-vulnerability records, and live threat catalogs</p>
+                </div>
+
+                <!-- NIST NVD -->
+                <div id="tool-nist-nvd" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔴</span>
+                        <h3 class="tool-title">NIST NVD - CVE Search</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Pull structured NVD records to review severity, affected products, and official advisory metadata.</p>
+                        <input type="text" class="input-terminal" id="nist-nvd-input" placeholder="Enter CVE or product artifact (e.g., CVE-2024-1234)">
+                        <button class="btn-terminal" onclick="searchNistNVD()">QUERY NVD FILE</button>
+                        <div id="nist-nvd-loading" class="loading-terminal"><span class="terminal-spinner"></span> PULLING NVD DOSSIER...</div>
+                        <div id="nist-nvd-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- MITRE CVE -->
+                <div id="tool-mitre-cve" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔵</span>
+                        <h3 class="tool-title">MITRE CVE Database</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Cross-check MITRE records for identifier history, references, and authoritative vulnerability context.</p>
+                        <input type="text" class="input-terminal" id="mitre-cve-input" placeholder="Enter CVE or product artifact (e.g., CVE-2024-5678)">
+                        <button class="btn-terminal" onclick="searchMitreCVE()">QUERY MITRE FILE</button>
+                        <div id="mitre-cve-loading" class="loading-terminal"><span class="terminal-spinner"></span> PULLING MITRE DOSSIER...</div>
+                        <div id="mitre-cve-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- OSV.dev -->
+                <div id="tool-osv-dev" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🟣</span>
+                        <h3 class="tool-title">OSV.dev - Open Source Vulns</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Trace open-source package exposure across ecosystems to identify vulnerable dependencies and advisories.</p>
+                        <input type="text" class="input-terminal" id="osv-dev-input" placeholder="Enter package or CVE artifact (e.g., npm:lodash)">
+                        <button class="btn-terminal" onclick="searchOsvDev()">QUERY OSV FILE</button>
+                        <div id="osv-dev-loading" class="loading-terminal"><span class="terminal-spinner"></span> PULLING OSV DOSSIER...</div>
+                        <div id="osv-dev-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- CVE Details -->
+                <div id="tool-cve-details" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🔍</span>
+                        <h3 class="tool-title">CVE Details Lookup</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Open detailed CVE case data including scoring, version exposure, and remediation references.</p>
+                        <input type="text" class="input-terminal" id="cve-details-input" placeholder="Enter CVE case ID (e.g., CVE-2024-0001)">
+                        <button class="btn-terminal" onclick="lookupCVEDetails()">OPEN CVE FILE</button>
+                        <div id="cve-details-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- CISA KEV -->
+                <div id="tool-cisa-kev" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">⚠️</span>
+                        <h3 class="tool-title">CISA KEV - Exploited Vulns</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Query the KEV catalog for confirmed in-the-wild exploitation and urgent operational exposure.</p>
+                        <input type="text" class="input-terminal" id="cisa-kev-input" placeholder="Enter CVE, vendor, or product artifact (optional)">
+                        <button class="btn-terminal" onclick="searchCISAKEV()">QUERY KEV FILE</button>
+                        <div id="cisa-kev-loading" class="loading-terminal"><span class="terminal-spinner"></span> PULLING KEV DOSSIER...</div>
+                        <div id="cisa-kev-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- ===== CATEGORY DIVIDER: RECONNAISSANCE TECHNIQUES ===== -->
+                <div id="recon-category" style="margin: 2.5rem 0 1.5rem 0; padding: 1.2rem 1rem; border-left: 5px solid #00ffff; background: rgba(0, 255, 255, 0.08);">
+                    <h3 style="color: #00ffff; font-size: 1.15rem; margin: 0 0 0.3rem 0; text-transform: uppercase; letter-spacing: 2px;">🎯 FIELD RECON PLAYBOOKS</h3>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">Query playbooks and search syntax for locating exposed surfaces and weak points</p>
+                </div>
+
+                <!-- Google Hacking Database -->
+                <div id="tool-ghdb" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">📚</span>
+                        <h3 class="tool-title">Google Hacking Database</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Load categorized search payloads for locating exposed assets, weak pages, and sensitive file surfaces.</p>
+                        <select id="ghdb-category-select" class="input-terminal">
+                            <option value="Vulnerable Data">Vulnerable Data</option>
+                            <option value="Server">Server Configs</option>
+                            <option value="Devices">Network Devices</option>
+                        </select>
+                        <button class="btn-terminal" onclick="getGHDBDorks()">LOAD DORKS</button>
+                        <div id="ghdb-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- ===== CATEGORY DIVIDER: ARCHIVE INTELLIGENCE ===== -->
+                <div id="archive-category" style="margin: 2.5rem 0 1.5rem 0; padding: 1.2rem 1rem; border-left: 5px solid #00ffff; background: rgba(0, 255, 255, 0.08);">
+                    <h3 style="color: #00ffff; font-size: 1.15rem; margin: 0 0 0.3rem 0; text-transform: uppercase; letter-spacing: 2px;">📦 ARCHIVE CASEFILES</h3>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">Temporal snapshots and historical evidence from archived web captures</p>
+                </div>
+
+                <!-- Internet Archive Search -->
+                <div id="tool-archive-search" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">📦</span>
+                        <h3 class="tool-title">Internet Archive Search</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Interrogate archived captures to recover deleted pages, past content, and historical exposure trails.</p>
+                        <input type="text" class="input-terminal" id="archive-search-input" placeholder="Enter domain or URL artifact (e.g., example.com)">
+                        <button class="btn-terminal" onclick="searchInternetArchive()">OPEN ARCHIVE FILE</button>
+                        <div id="archive-search-loading" class="loading-terminal"><span class="terminal-spinner"></span> OPENING ARCHIVE CASEFILE...</div>
+                        <div id="archive-search-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- ===== CATEGORY DIVIDER: MULTI-ENGINE SEARCH ===== -->
+                <div id="search-category" style="margin: 2.5rem 0 1.5rem 0; padding: 1.2rem 1rem; border-left: 5px solid #00ffff; background: rgba(0, 255, 255, 0.08);">
+                    <h3 style="color: #00ffff; font-size: 1.15rem; margin: 0 0 0.3rem 0; text-transform: uppercase; letter-spacing: 2px;">🚀 SEARCH SURFACE MATRIX</h3>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">Dispatch one query across multiple engines for broad-source collection</p>
+                </div>
+
+                <!-- Search Launchers Section -->
+                <div id="tool-search-launchers" class="tool-terminal">
+                    <div class="tool-header">
+                        <span class="tool-icon">🚀</span>
+                        <h3 class="tool-title">Multi-Engine Search Launcher</h3>
+                    </div>
+                    <div class="tool-body">
+                        <p class="tool-desc">Dispatch a single query across multiple engines to widen collection coverage in one pass.</p>
+                        <input type="text" class="input-terminal" id="search-launcher-input" placeholder="Enter collection query or subject">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 1rem;">
+                            <button class="btn-terminal" onclick="launchSearch('google')">Google</button>
+                            <button class="btn-terminal" onclick="launchSearch('bing')">Bing</button>
+                            <button class="btn-terminal" onclick="launchSearch('duckduckgo')">DuckDuckGo</button>
+                            <button class="btn-terminal" onclick="launchSearch('brave')">Brave</button>
+                            <button class="btn-terminal" onclick="launchSearch('startpage')">Startpage</button>
+                            <button class="btn-terminal" onclick="launchSearch('swisscows')">Swisscows</button>
+                            <button class="btn-terminal" onclick="launchSearch('qwant')">Qwant</button>
+                            <button class="btn-terminal" onclick="launchSearch('yahoo')">Yahoo</button>
+                            <button class="btn-terminal" onclick="launchSearch('yandex')">Yandex</button>
+                            <button class="btn-terminal" onclick="launchSearch('baidu')">Baidu</button>
+                            <button class="btn-terminal" onclick="launchSearch('naver')">Naver</button>
+                            <button class="btn-terminal" onclick="launchSearch('searxng')">SearXNG</button>
+                        </div>
+                        <p class="tool-desc" style="margin-top: 1rem; font-size: 0.85rem;">Click any engine to open search in new tab</p>
+                        <div id="search-launcher-results" class="results-terminal"></div>
+                    </div>
+                </div>
+
+                <!-- ===== CATEGORY DIVIDER: DEVELOPER UTILITIES ===== -->
+                <div id="utilities-category" style="margin: 2.5rem 0 1.5rem 0; padding: 1.2rem 1rem; border-left: 5px solid #00ffff; background: rgba(0, 255, 255, 0.08);">
+                    <h3 style="color: #00ffff; font-size: 1.15rem; margin: 0 0 0.3rem 0; text-transform: uppercase; letter-spacing: 2px;">⚙️ SIGNAL UTILITIES</h3>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">Transform, normalize, and inspect raw text, tokens, and encoded artifacts</p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Reference Database Tab -->
+        <div id="reference-tab" class="tab-content">
+            <h2 class="section-header">External Tool Reference Database</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Reference-only external OSINT tools. Working in-site tools are listed in the Active Tools tab.</p>
+
+            <section class="live-search-section">
+                <div class="live-search-head">
+                    <div>
+                        <h3 class="live-search-title">Live Search Workspace</h3>
+                        <p class="live-search-desc">Run supported external search engines inside your site when API or embed access exists. Sources that block embedding stay in the panel with a clear fallback instead of forcing a redirect.</p>
+                    </div>
+                    <div id="live-search-status" class="live-search-status">Ready. Select a source to begin.</div>
+                </div>
+
+                <div class="live-search-toolbar">
+                    <select id="live-search-source" class="input-terminal live-search-select"></select>
+                    <input type="text" id="live-search-query" class="input-terminal live-search-input" placeholder="Enter a query">
+                    <button type="button" id="live-search-run" class="btn-terminal">RUN LIVE SEARCH</button>
+                    <button type="button" id="live-search-open" class="btn-terminal">OPEN SOURCE</button>
+                </div>
+
+                <div id="live-search-summary" class="live-search-summary"></div>
+                <div id="live-search-loading" class="loading-terminal"><span class="terminal-spinner"></span> QUERYING LIVE SOURCE...</div>
+
+                <div id="live-search-results" class="results-terminal live-search-results"></div>
+
+                <div id="live-search-embed-wrap" class="live-search-embed-wrap">
+                    <iframe
+                        id="live-search-embed"
+                        class="live-search-embed"
+                        title="Live search workspace"
+                        loading="lazy"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                    ></iframe>
+                </div>
+            </section>
+
+            <div class="reference-toolbar">
+                <input type="text" id="reference-search" class="input-terminal reference-search" placeholder="Search tools by name, description, category...">
+                <select id="reference-category-filter" class="input-terminal reference-select">
+                    <option value="all">All categories</option>
+                </select>
+                <div id="reference-stats" class="reference-stats"></div>
+            </div>
+
+            <div class="reference-categories" id="reference-container"></div>
+
+            <dialog id="reference-category-dialog" class="reference-dialog">
+                <div class="reference-dialog-panel">
+                    <div class="reference-dialog-head">
+                        <h3 id="reference-dialog-title" class="reference-dialog-title">Category</h3>
+                        <button class="btn-terminal btn-small" type="button" onclick="closeReferenceDialog()">CLOSE</button>
+                    </div>
+                    <p id="reference-dialog-meta" class="reference-dialog-meta"></p>
+                    <div id="reference-dialog-tools" class="reference-grid reference-dialog-tools"></div>
+                </div>
+            </dialog>
+        </div>
+
+        <!-- Account Tab -->
+        <div id="account-tab" class="tab-content">
+            <h2 class="section-header">Account Section</h2>
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Username</div>
+                    <div class="dashboard-value" id="account-username">Guest</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Role</div>
+                    <div class="dashboard-value" id="account-role">N/A</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Session</div>
+                    <div class="dashboard-value" id="account-session-state">Locked</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Login Time</div>
+                    <div class="dashboard-value" id="account-login-time">--</div>
+                </div>
+            </div>
+
+            <div class="tool-terminal" style="margin-top: 1.2rem;">
+                <div class="tool-header">
+                    <span class="tool-icon">ME</span>
+                    <h3 class="tool-title">My Activity</h3>
+                </div>
+                <div class="tool-body">
+                    <div class="activity-head">
+                        <div id="account-activity-summary" class="activity-summary"></div>
+                    </div>
+                    <div class="activity-table-wrap">
+                        <table class="activity-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                    <th>Tool</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="account-activity-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel Tab -->
+        <div id="admin-tab" class="tab-content">
+            <h2 class="section-header">Admin Panel</h2>
+            <p id="admin-panel-note" style="color: var(--text-secondary); margin-bottom: 1rem;">Admin-only monitoring and controls.</p>
+            <div id="admin-activity-panel" class="tool-terminal" style="display: none; margin-bottom: 2rem;">
+                <div class="tool-header">
+                    <span class="tool-icon">LOG</span>
+                    <h3 class="tool-title">User Activity Monitor (Admin)</h3>
+                </div>
+                <div class="tool-body">
+                    <div class="activity-head">
+                        <div id="activity-summary" class="activity-summary"></div>
+                        <button class="btn-terminal btn-small" type="button" onclick="clearActivityLogs()">CLEAR LOGS</button>
+                    </div>
+                    <div class="activity-table-wrap">
+                        <table class="activity-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Tool</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-log-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p class="footer-text">MATRIX OSINT - Neural Network Intelligence System v1.0</p>
+            <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">All systems operational | Secure connection established</p>
+        </footer>
+    </div>
+
+    <script src="js/core-ui.js?v=20260316-01" defer></script>
+    <script src="matrix-osint-integrated.js?v=20260317-62" defer></script>
+</body>
+</html>
+

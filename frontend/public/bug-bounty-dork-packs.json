@@ -1,0 +1,94 @@
+{
+  "packs": [
+    {
+      "id": "security-txt",
+      "name": "Security.txt Discovery",
+      "builderProfile": "bug-bounty",
+      "note": "Focuses on disclosure pages and security contact paths commonly published outside bounty platforms.",
+      "tags": ["security.txt", "disclosure", "recon"],
+      "excludes": ["hackerone", "bugcrowd", "intigriti", "yeswehack", "synack", "openbugbounty"],
+      "templates": [
+        { "label": "Security.txt Mentions", "fragment": "(\"security.txt\" OR \".well-known/security.txt\")" },
+        { "label": "Well-Known Security Path", "fragment": "inurl:.well-known/security.txt" },
+        { "label": "Responsible Disclosure Copy", "fragment": "(\"responsible disclosure\" OR \"vulnerability disclosure\")" },
+        { "label": "Report A Vulnerability", "fragment": "(\"report a vulnerability\" OR \"security contact\")" },
+        { "label": "Security Policy Pages", "fragment": "(\"security policy\" OR \"report security issue\")" }
+      ]
+    },
+    {
+      "id": "reward-signals",
+      "name": "Reward / Hall of Fame Signals",
+      "builderProfile": "bug-bounty",
+      "note": "Targets reward, swag, and researcher-recognition language that often indicates an active disclosure program.",
+      "tags": ["rewards", "recognition", "recon"],
+      "excludes": ["hackerone", "bugcrowd", "intigriti", "yeswehack", "synack"],
+      "templates": [
+        { "label": "Bounty Or Reward Language", "fragment": "(\"bug bounty\" OR bounty OR reward)" },
+        { "label": "Hall Of Fame Language", "fragment": "(\"hall of fame\" OR \"security researchers\")" },
+        { "label": "Swag Or Recognition", "fragment": "(swag OR thanks OR recognition) (security OR vulnerability)" },
+        { "label": "VDP With Reward Signals", "fragment": "(\"vulnerability disclosure program\" OR \"responsible disclosure\") (reward OR swag OR thanks)" },
+        { "label": "Researcher Acknowledgement", "fragment": "(\"researcher acknowledgment\" OR \"security acknowledgements\")" }
+      ]
+    },
+    {
+      "id": "multilingual",
+      "name": "Multilingual Program Discovery",
+      "builderProfile": "bug-bounty",
+      "note": "Uses common English and regional disclosure terms to surface programs outside the usual platform ecosystem.",
+      "tags": ["multilingual", "regional", "disclosure"],
+      "excludes": ["hackerone", "bugcrowd", "intigriti", "yeswehack", "synack"],
+      "templates": [
+        { "label": "English Disclosure Terms", "fragment": "(\"responsible disclosure\" OR \"vulnerability disclosure\" OR \"security.txt\")" },
+        { "label": "French / Spanish Terms", "fragment": "(\"divulgation responsable\" OR \"divulgacion responsable\" OR \"programa de recompensas\")" },
+        { "label": "Dutch / German Terms", "fragment": "(\"responsible disclosure beleid\" OR \"sicherheitslücke melden\")" },
+        { "label": "Nordic / Polish Terms", "fragment": "(\"sikkerhetsproblem\" OR \"zgłaszanie podatności\" OR \"ansvarlig offentliggørelse\")" },
+        { "label": "Reward Words Across Languages", "fragment": "(reward OR recompensa OR prime OR premie OR nagroda)" }
+      ]
+    },
+    {
+      "id": "platform-free",
+      "name": "Platform-Exclusion Discovery",
+      "builderProfile": "bug-bounty",
+      "note": "Builds discovery searches with common platform names excluded so results lean toward first-party program pages.",
+      "tags": ["platform-free", "disclosure", "recon"],
+      "excludes": ["hackerone", "bugcrowd", "intigriti", "yeswehack", "synack", "openbugbounty", "federacy"],
+      "templates": [
+        { "label": "Program Pages Minus Platforms", "fragment": "(\"bug bounty\" OR \"responsible disclosure\" OR \"vulnerability disclosure\")" },
+        { "label": "Security.txt Minus Platforms", "fragment": "(\"security.txt\" OR \".well-known/security.txt\")" },
+        { "label": "Rewards Minus Platforms", "fragment": "(reward OR swag OR \"hall of fame\") (security OR vulnerability)" },
+        { "label": "Report Pages Minus Platforms", "fragment": "(\"report a vulnerability\" OR \"submit vulnerability\")" },
+        { "label": "Policy Pages Minus Platforms", "fragment": "(\"security policy\" OR \"coordinated disclosure\")" }
+      ]
+    },
+    {
+      "id": "gov-disclosure",
+      "name": "Government Disclosure Discovery",
+      "builderProfile": "bug-bounty",
+      "note": "Targets government and public-sector security contact pages, VDP notices, and security.txt disclosures.",
+      "tags": ["gov", "public-sector", "security.txt", "disclosure"],
+      "excludes": ["hackerone", "bugcrowd", "intigriti", "yeswehack", "synack"],
+      "templates": [
+        { "label": "Government Security.txt", "fragment": "(site:.gov OR site:.mil OR site:.gc.ca OR site:.gov.uk) (\"security.txt\" OR \".well-known/security.txt\")" },
+        { "label": "Government VDP Pages", "fragment": "(site:.gov OR site:.mil OR site:.gov.au) (\"vulnerability disclosure\" OR \"responsible disclosure\")" },
+        { "label": "Public Sector Security Contacts", "fragment": "(site:.gov OR site:.govt.nz OR site:.eu) (\"security contact\" OR \"report a vulnerability\")" },
+        { "label": "CVD Policy Discovery", "fragment": "(site:.gov OR site:.mil) (\"coordinated vulnerability disclosure\" OR \"security policy\")" },
+        { "label": "Agency Researcher Guidance", "fragment": "(site:.gov OR site:.gov.uk) (researcher OR security) (policy OR guidance OR disclosure)" }
+      ]
+    },
+    {
+      "id": "edu-research",
+      "name": "Education / University Discovery",
+      "builderProfile": "bug-bounty",
+      "note": "Looks for university and academic institution disclosure programs, researcher thanks pages, and security reporting contacts.",
+      "tags": ["edu", "university", "research", "disclosure"],
+      "excludes": ["hackerone", "bugcrowd", "intigriti", "yeswehack", "synack"],
+      "templates": [
+        { "label": "University Security.txt", "fragment": "(site:.edu OR site:.ac.uk OR site:.edu.au) (\"security.txt\" OR \".well-known/security.txt\")" },
+        { "label": "Academic Disclosure Pages", "fragment": "(site:.edu OR site:.ac.uk OR site:.edu) (\"responsible disclosure\" OR \"vulnerability disclosure\")" },
+        { "label": "Security Contacts In Education", "fragment": "(site:.edu OR site:.ac.uk) (\"security contact\" OR \"report a vulnerability\")" },
+        { "label": "Hall Of Fame In Education", "fragment": "(site:.edu OR site:.ac.uk) (\"hall of fame\" OR \"security researchers\")" },
+        { "label": "Campus Security Policy", "fragment": "(site:.edu OR site:.ac.uk OR site:.edu.au) (\"security policy\" OR \"coordinated disclosure\")" }
+      ]
+    }
+  ]
+}
