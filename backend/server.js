@@ -374,6 +374,25 @@ async function handleApi(req, res, pathname, searchParams) {
         return;
     }
 
+    if (req.method === 'GET' && pathname === '/api/auth/session') {
+        const sessionToken = req.headers['x-session-token'] || '';
+        const session = getSession(sessionToken);
+
+        if (!session) {
+            sendJson(res, 401, { error: 'Unauthorized. Invalid or missing session token.' });
+            return;
+        }
+
+        sendJson(res, 200, {
+            user: {
+                username: session.username,
+                role: session.role
+            },
+            loginAt: new Date(session.createdAt).toISOString()
+        });
+        return;
+    }
+
     if (req.method === 'POST' && pathname === '/api/auth/register') {
         const body = await parseJsonBody(req);
         const username = String(body.username || '').trim();

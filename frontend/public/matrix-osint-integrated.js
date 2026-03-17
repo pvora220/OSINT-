@@ -22,14 +22,231 @@
         const BUG_BOUNTY_PACKS_URL = 'bug-bounty-dork-packs.json?v=20260316-01';
         const BUG_BOUNTY_PANEL_STATE_KEY = 'matrixBugBountyPanelState';
         const BUG_BOUNTY_RESULTS_STATE_KEY = 'matrixBugBountyResultsState';
+        const AUTH_SESSION_STORAGE_KEY = 'matrixAuthSession';
         let currentSession = null;
         let sessionToken = null;
+        let currentLoginAt = null;
         let latestDatabaseStats = null;
         let authInitialized = false;
         let bugBountyDorkPacks = {};
         let activeBugBountyTag = 'all';
         let persistedBugBountyPackId = '';
         let threatMapInitialized = false;
+
+        function persistAuthSession() {
+            try {
+                if (!sessionToken || !currentSession?.username) {
+                    window.localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+                    return;
+                }
+
+                window.localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify({
+                    token: sessionToken,
+                    user: currentSession,
+                    loginAt: currentLoginAt || ''
+                }));
+            } catch (error) {
+                console.warn('Unable to persist auth session:', error);
+            }
+        }
+
+        function clearPersistedAuthSession() {
+            try {
+                window.localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+            } catch (error) {
+                console.warn('Unable to clear auth session:', error);
+            }
+        }
+
+        function populateActivityTable(targetBodyId, logs, includeUsername = false) {
+            const body = document.getElementById(targetBodyId);
+            if (!body) {
+                return;
+            }
+
+            if (!Array.isArray(logs) || !logs.length) {
+                body.innerHTML = `<tr><td colspan="${includeUsername ? 5 : 4}">No activity recorded.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = logs.map(log => {
+                const columns = [
+                    `<td>${escapeHtml(log.timestamp ? new Date(log.timestamp).toLocaleString() : '--')}</td>`
+                ];
+
+                if (includeUsername) {
+                    columns.push(`<td>${escapeHtml(log.username || 'Unknown')}</td>`);
+                }
+
+                columns.push(`<td>${escapeHtml(log.action || '--')}</td>`);
+                columns.push(`<td>${escapeHtml(log.tool || '--')}</td>`);
+                columns.push(`<td>${escapeHtml(log.details || '--')}</td>`);
+
+                return `<tr>${columns.join('')}</tr>`;
+            }).join('');
+        }
+
+        function renderHomeAndDashboard() {
+            const isLoggedIn = !!currentSession?.username;
+            const isAdmin = currentSession?.role === 'admin';
+            const categoryCount = new Set(referenceTools.map(tool => tool.category)).size;
+
+            const setText = (id, value) => {
+                const node = document.getElementById(id);
+                if (node) {
+                    node.textContent = value;
+                }
+            };
+
+            setText('dashboard-user', isLoggedIn ? currentSession.username : 'Guest');
+            setText('dashboard-role', currentSession?.role || 'N/A');
+            setText('dashboard-reference-count', String(referenceTools.length || 0));
+            setText('dashboard-category-count', String(categoryCount || 0));
+            setText('dashboard-user-count', String(latestDatabaseStats?.users || 0));
+            setText('dashboard-activity-count', String(latestDatabaseStats?.activityLogs || 0));
+
+            setText('account-username', isLoggedIn ? currentSession.username : 'Guest');
+            setText('account-role', currentSession?.role || 'N/A');
+            setText('account-session-state', isLoggedIn ? 'Active' : 'Locked');
+            setText('account-login-time', currentLoginAt ? new Date(currentLoginAt).toLocaleString() : '--');
+
+            const adminPanel = document.getElementById('admin-activity-panel');
+            const adminNote = document.getElementById('admin-panel-note');
+            if (adminPanel) {
+                adminPanel.style.display = isAdmin ? 'block' : 'none';
+            }
+            if (adminNote) {
+                adminNote.textContent = isAdmin
+                    ? 'Admin monitoring and controls unlocked.'
+                    : 'Admin-only monitoring and controls. Login with an admin account to access this section.';
+            }
+        }
+
+        async function refreshActivityViews() {
+            const accountSummary = document.getElementById('account-activity-summary');
+            const adminSummary = document.getElementById('activity-summary');
+
+            if (!currentSession?.username) {
+                populateActivityTable('account-activity-body', [], false);
+                populateActivityTable('activity-log-body', [], true);
+                if (accountSummary) {
+                    accountSummary.textContent = 'Login required.';
+                }
+                if (adminSummary) {
+                    adminSummary.textContent = 'Admin login required.';
+                }
+                return;
+            }
+
+            try {
+                const data = await apiRequest(`/activity?limit=${ACTIVITY_LIMIT}`);
+                const logs = Array.isArray(data.logs) ? data.logs : [];
+                const myLogs = logs.filter(log => log.username === currentSession.username);
+                populateActivityTable('account-activity-body', myLogs, false);
+                if (accountSummary) {
+                    accountSummary.textContent = `${myLogs.length} activity event${myLogs.length === 1 ? '' : 's'} for ${currentSession.username}.`;
+                }
+
+                if (currentSession.role === 'admin') {
+                    populateActivityTable('activity-log-body', logs, true);
+                    if (adminSummary) {
+                        adminSummary.textContent = `${logs.length} total event${logs.length === 1 ? '' : 's'} in the activity log.`;
+                    }
+                } else {
+                    populateActivityTable('activity-log-body', [], true);
+                    if (adminSummary) {
+                        adminSummary.textContent = 'Admin login required.';
+                    }
+                }
+            } catch (error) {
+                populateActivityTable('account-activity-body', [], false);
+                populateActivityTable('activity-log-body', [], true);
+                if (accountSummary) {
+                    accountSummary.textContent = error.message || 'Unable to load activity.';
+                }
+                if (adminSummary) {
+                    adminSummary.textContent = error.message || 'Unable to load admin activity.';
+                }
+            }
+        }
+
+        async function refreshSessionViews() {
+            await updateDatabaseCount();
+            renderHomeAndDashboard();
+            await refreshActivityViews();
+        }
+
+        async function restorePersistedSession() {
+            try {
+                const raw = window.localStorage.getItem(AUTH_SESSION_STORAGE_KEY);
+                if (!raw) {
+                    return;
+                }
+
+                const stored = JSON.parse(raw);
+                if (!stored?.token) {
+                    clearPersistedAuthSession();
+                    return;
+                }
+
+                sessionToken = String(stored.token || '');
+                const data = await apiRequest('/auth/session', {
+                    headers: {
+                        'X-Session-Token': sessionToken
+                    }
+                });
+
+                currentSession = data.user || null;
+                currentLoginAt = data.loginAt || stored.loginAt || null;
+                persistAuthSession();
+            } catch (error) {
+                sessionToken = null;
+                currentSession = null;
+                currentLoginAt = null;
+                clearPersistedAuthSession();
+            }
+        }
+
+        async function logActivity(action, tool, details = '') {
+            if (!sessionToken || !currentSession?.username) {
+                return;
+            }
+
+            try {
+                await apiRequest('/activity', {
+                    method: 'POST',
+                    headers: {
+                        'X-Session-Token': sessionToken
+                    },
+                    body: JSON.stringify({ action, tool, details })
+                });
+                await refreshSessionViews();
+            } catch (error) {
+                console.warn('Activity log failed:', error.message || error);
+            }
+        }
+
+        async function clearActivityLogs() {
+            if (!currentSession?.username || currentSession.role !== 'admin' || !sessionToken) {
+                alert('> ISSUE: Admin access required');
+                return;
+            }
+
+            try {
+                await apiRequest('/activity', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-Session-Token': sessionToken
+                    },
+                    body: JSON.stringify({ token: sessionToken })
+                });
+                await refreshSessionViews();
+            } catch (error) {
+                alert(`> ISSUE: ${error.message || 'Unable to clear activity logs'}`);
+            }
+        }
+
+        window.clearActivityLogs = clearActivityLogs;
 
         async function apiRequest(path, options = {}) {
             let lastNetworkError = null;
@@ -124,6 +341,8 @@
                     ? `USER: ${currentSession.username}${currentSession.role ? ` | ROLE: ${currentSession.role}` : ''}`
                     : '';
             }
+
+            void refreshSessionViews();
         }
 
         async function updateDatabaseCount() {
@@ -165,6 +384,8 @@
 
                 sessionToken = data.token || null;
                 currentSession = data.user || { username, role: 'analyst' };
+                currentLoginAt = data.loginAt || new Date().toISOString();
+                persistAuthSession();
                 setAuthMessage('Login successful.');
                 updateSessionUI();
             } catch (error) {
@@ -188,13 +409,20 @@
             }
 
             try {
-                const data = await apiRequest('/auth/register', {
+                await apiRequest('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password, confirmPassword: confirm })
+                });
+
+                const loginData = await apiRequest('/auth/login', {
                     method: 'POST',
                     body: JSON.stringify({ username, password })
                 });
 
-                sessionToken = data.token || null;
-                currentSession = data.user || { username, role: 'analyst' };
+                sessionToken = loginData.token || null;
+                currentSession = loginData.user || { username, role: 'user' };
+                currentLoginAt = loginData.loginAt || new Date().toISOString();
+                persistAuthSession();
                 setAuthMessage('Account created.');
                 updateSessionUI();
             } catch (error) {
@@ -218,6 +446,8 @@
 
             sessionToken = null;
             currentSession = null;
+            currentLoginAt = null;
+            clearPersistedAuthSession();
             updateSessionUI();
             setAuthMessage('Logged out.');
         }
@@ -238,8 +468,9 @@
                 registerForm.addEventListener('submit', handleRegistration);
 
                 currentSession = null;
+                currentLoginAt = null;
+                await restorePersistedSession();
                 updateSessionUI();
-                await updateDatabaseCount();
                 authInitialized = true;
             } catch (error) {
                 console.error('Auth initialization failed:', error);
