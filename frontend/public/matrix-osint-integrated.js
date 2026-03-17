@@ -246,7 +246,17 @@
             }
         }
 
+        async function refreshAccountActivity() {
+            await refreshSessionViews();
+        }
+
+        async function refreshAdminActivity() {
+            await refreshSessionViews();
+        }
+
         window.clearActivityLogs = clearActivityLogs;
+        window.refreshAccountActivity = refreshAccountActivity;
+        window.refreshAdminActivity = refreshAdminActivity;
 
         async function apiRequest(path, options = {}) {
             let lastNetworkError = null;
