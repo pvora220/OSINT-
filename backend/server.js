@@ -10,6 +10,8 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(PROJECT_ROOT, 'frontend', 'public');
 const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 const DB_PATH = path.join(DATA_DIR, 'matrix-osint.db');
+const DEFAULT_ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || 'potato2002').trim();
+const DEFAULT_ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || 'Potato/2002');
 const VERIPHONE_API_KEY = String(process.env.VERIPHONE_API_KEY || '').trim();
 const API_CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -118,6 +120,40 @@ function scrubLegacyOwnerReferences() {
     `).run();
 }
 
+function ensureBootstrapAdmin() {
+    const username = DEFAULT_ADMIN_USERNAME;
+    const password = DEFAULT_ADMIN_PASSWORD;
+
+    if (!username || !password) {
+        return;
+    }
+
+    const now = new Date().toISOString();
+    const hashedPassword = hashPassword(password);
+    const existing = db.prepare(`
+        SELECT id
+        FROM users
+        WHERE username = ?
+        LIMIT 1
+    `).get(username);
+
+    if (existing) {
+        db.prepare(`
+            UPDATE users
+            SET password = ?, role = 'admin'
+            WHERE id = ?
+        `).run(hashedPassword, existing.id);
+        console.log(`Bootstrap admin account refreshed: ${username}`);
+        return;
+    }
+
+    db.prepare(`
+        INSERT INTO users (username, password, role, created_at)
+        VALUES (?, ?, 'admin', ?)
+    `).run(username, hashedPassword, now);
+    console.log(`Bootstrap admin account created: ${username}`);
+}
+
 function initDatabase() {
     db.exec(`
         CREATE TABLE IF NOT EXISTS users (
@@ -151,19 +187,7 @@ function initDatabase() {
 
     ensureReferenceToolColumns();
     scrubLegacyOwnerReferences();
-
-    // Only seed admin if it doesn't exist (one-time only, no forced override)
-    const existing = db.prepare('SELECT 1 FROM users WHERE username = ? LIMIT 1').get('admin');
-    if (!existing) {
-        const now = new Date().toISOString();
-        const adminPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
-        const hashedPassword = hashPassword(adminPassword);
-        db.prepare(`
-            INSERT INTO users (username, password, role, created_at)
-            VALUES (?, ?, ?, ?)
-        `).run('admin', hashedPassword, 'admin', now);
-        console.log(`Admin account created. Password: ${adminPassword}`);
-    }
+    ensureBootstrapAdmin();
 
     const insertTool = db.prepare(`
         INSERT OR IGNORE INTO reference_tools (name, description, category, url, source)
