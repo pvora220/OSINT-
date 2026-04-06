@@ -247,8 +247,8 @@
             const password = String(document.getElementById('register-password')?.value || '');
             const confirm = String(document.getElementById('register-confirm-password')?.value || '');
 
-            if (!username || !password) {
-                setAuthMessage('Enter username and password.', true);
+            if (!username || !password || !confirm) {
+                setAuthMessage('All registration fields are required.', true);
                 return;
             }
             if (password !== confirm) {
