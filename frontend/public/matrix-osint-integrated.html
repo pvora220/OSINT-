@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MATRIX OSINT - Neural Network Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="matrix-osint-integrated.css?v=20260317-55">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="matrix-osint-integrated.css?v=20260406-04">
 </head>
 <body>
     <canvas id="matrix-canvas"></canvas>
@@ -37,6 +37,15 @@
                 <button type="submit" class="btn-terminal" style="width: 100%;">CREATE ACCOUNT</button>
             </form>
 
+            <form id="auth-2fa-verify-form" class="auth-form" action="javascript:void(0);">
+                <h3 style="color: var(--matrix-green); text-align: center; margin-bottom: 1rem;">2FA Required</h3>
+                <input id="verify-2fa-token" type="text" class="input-terminal auth-input" placeholder="6-digit code" autocomplete="one-time-code">
+                <button type="submit" class="btn-terminal" style="width: 100%;">VALIDATE 2FA</button>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <a href="#" onclick="switchAuthTab('login')" style="color: var(--text-dim); text-decoration: none; font-size: 0.9em;">Back to Login</a>
+                </div>
+            </form>
+
             <p id="auth-message" class="auth-message"></p>
         </div>
     </div>
@@ -53,12 +62,27 @@
         </div>
 
         <div class="terminal-tabs">
-            <button class="terminal-tab active" onclick="switchTab(0, 'home')">> Home</button>
-            <button class="terminal-tab" onclick="switchTab(1, 'dashboard')">> Dashboard</button>
-            <button class="terminal-tab" onclick="switchTab(2, 'tools')">> Active Tools</button>
-            <button class="terminal-tab" onclick="switchTab(3, 'reference')">> Reference Database</button>
-            <button class="terminal-tab" onclick="switchTab(4, 'account')">> Account</button>
-            <button class="terminal-tab" onclick="switchTab(5, 'admin')">> Admin Panel</button>
+            <div class="rail-group-label">CORE MODULES</div>
+            <button class="terminal-tab active" data-icon="⌂" onclick="switchTab(0, 'home')"><span class="tab-icon" aria-hidden="true">⌂</span><span class="tab-label">Home</span></button>
+            <button class="terminal-tab" data-icon="▣" onclick="switchTab(1, 'dashboard')"><span class="tab-icon" aria-hidden="true">▣</span><span class="tab-label">Dashboard</span></button>
+            <button class="terminal-tab" data-icon="⌘" onclick="switchTab(2, 'tools')"><span class="tab-icon" aria-hidden="true">⌘</span><span class="tab-label">Active Tools</span></button>
+
+            <div class="rail-group-label">INTELLIGENCE OPS</div>
+            <button class="terminal-tab" data-icon="⛓" onclick="switchTab(3, 'correlation')"><span class="tab-icon" aria-hidden="true">⛓</span><span class="tab-label">Threat Correlation</span></button>
+            <button class="terminal-tab" data-icon="◉" onclick="switchTab(4, 'ai-agent')"><span class="tab-icon" aria-hidden="true">◉</span><span class="tab-label">AI OSINT Agent</span></button>
+            <button class="terminal-tab" data-icon="◌" onclick="switchTab(5, 'collaborate')"><span class="tab-icon" aria-hidden="true">◌</span><span class="tab-label">Collaboration</span></button>
+            <button class="terminal-tab" data-icon="⇲" onclick="switchTab(6, 'export')"><span class="tab-icon" aria-hidden="true">⇲</span><span class="tab-label">Reports Export</span></button>
+            <button class="terminal-tab" data-icon="◎" onclick="switchTab(7, 'graph')"><span class="tab-icon" aria-hidden="true">◎</span><span class="tab-label">Entity Graph</span></button>
+
+            <div class="rail-group-label">THREAT SYSTEMS</div>
+            <button class="terminal-tab" data-icon="⌁" onclick="switchTab(8, 'monitor')"><span class="tab-icon" aria-hidden="true">⌁</span><span class="tab-label">Monitoring</span></button>
+            <button class="terminal-tab" data-icon="⚑" onclick="switchTab(9, 'exploit')"><span class="tab-icon" aria-hidden="true">⚑</span><span class="tab-label">Exploit Sim</span></button>
+            <button class="terminal-tab" data-icon="◈" onclick="switchTab(10, 'aggregator')"><span class="tab-icon" aria-hidden="true">◈</span><span class="tab-label">Privacy Aggregator</span></button>
+
+            <div class="rail-group-label">REFERENCE & ACCESS</div>
+            <button class="terminal-tab" data-icon="☍" onclick="switchTab(11, 'reference')"><span class="tab-icon" aria-hidden="true">☍</span><span class="tab-label">Reference Database</span></button>
+            <button class="terminal-tab" data-icon="◍" onclick="switchTab(12, 'account')"><span class="tab-icon" aria-hidden="true">◍</span><span class="tab-label">Account</span></button>
+            <button class="terminal-tab" data-icon="⛨" onclick="switchTab(13, 'admin')"><span class="tab-icon" aria-hidden="true">⛨</span><span class="tab-label">Admin Panel</span></button>
         </div>
 
         <!-- Home Tab -->
@@ -71,54 +95,13 @@
                         <div class="threat-map-title">Live Threat Map</div>
                         <div class="threat-map-subtitle">Monitor real-time global cyber activity feeds.</div>
                     </div>
-                    <div class="threat-map-controls">
-                        <label class="threat-map-label" for="threat-map-source">Source</label>
-                        <select id="threat-map-source" class="input-terminal threat-map-select">
-                            <option value="checkpoint">Check Point ThreatMap</option>
-                            <option value="kaspersky">Kaspersky Cybermap</option>
-                        </select>
-                        <label class="threat-map-label" for="background-mode">Background</label>
-                        <select id="background-mode" class="input-terminal threat-map-select threat-map-bg-select">
-                            <option value="matrix">Matrix Rain (Current)</option>
-                            <option value="threat">Live Threat Map</option>
-                            <option value="grid">Cyber Grid</option>
-                        </select>
-                        <button id="threat-map-sound-toggle" class="btn-terminal btn-small threat-map-sound-btn" type="button" aria-pressed="true">Sound: ON</button>
-                    </div>
                 </div>
                 <div id="threat-map-status" class="threat-map-status">Loading live threat map...</div>
                 <div class="threat-map-frame-wrap">
                     <div id="threat-map-fallback" class="threat-map-fallback" aria-hidden="true">
-                        <canvas id="threat-map-fallback-canvas" class="threat-map-fallback-canvas"></canvas>
-                        <div class="kaspersky-shell">
-                            <div class="kaspersky-topbar">
-                                <div class="kaspersky-brand">CYBERTHREAT LIVE MAP</div>
-                                <div class="kaspersky-locale">EN</div>
-                                <button type="button" class="kaspersky-cta">Protect Yourself</button>
-                            </div>
-                            <div class="kaspersky-nav">
-                                <span class="active">MAP</span>
-                                <span>STATISTICS</span>
-                                <span>DATA SOURCES</span>
-                                <span>BUZZ</span>
-                                <span>WIDGET</span>
-                            </div>
-                            <aside class="kaspersky-sidepanel">
-                                <div class="kaspersky-country-head">
-                                    <div id="kaspersky-country-name" class="kaspersky-country-name">SRI LANKA</div>
-                                    <div class="kaspersky-country-rank"># <span id="kaspersky-country-rank">37</span> MOST-ATTACKED COUNTRY</div>
-                                </div>
-                                <div id="kaspersky-stats" class="kaspersky-stats"></div>
-                                <div class="kaspersky-side-footer">Detections discovered since 00:00 GMT</div>
-                            </aside>
-                            <div class="kaspersky-toolbar">
-                                <span>G</span>
-                                <span>L</span>
-                                <span>+</span>
-                                <span>-</span>
-                                <span class="kaspersky-demo">DEMO OFF</span>
-                            </div>
-                            <div id="kaspersky-legend" class="kaspersky-legend"></div>
+                        <div class="threat-map-fallback-message">
+                            <div class="threat-map-fallback-title">LIVE FEED UNAVAILABLE</div>
+                            <div class="threat-map-fallback-text">Check Point ThreatMap did not load in embedded mode. Retry or refresh the page.</div>
                         </div>
                     </div>
                     <iframe
@@ -129,9 +112,6 @@
                         referrerpolicy="strict-origin-when-cross-origin"
                         allowfullscreen>
                     </iframe>
-                </div>
-                <div class="threat-map-links">
-                    <a id="threat-map-open-link" href="#" target="_blank" rel="noopener noreferrer">Open map in new tab</a>
                 </div>
                 <div class="threat-map-log-wrap">
                     <div class="threat-map-log-head">Threat Map Log</div>
@@ -723,7 +703,10 @@
             </section>
 
             <div class="reference-toolbar">
-                <input type="text" id="reference-search" class="input-terminal reference-search" placeholder="Search tools by name, description, category...">
+                <input type="text" id="reference-search" class="input-terminal reference-search" placeholder="Search tools by name or description...">
+                <select id="reference-use-case-filter" class="input-terminal reference-select">
+                    <option value="all">All use-cases</option>
+                </select>
                 <select id="reference-category-filter" class="input-terminal reference-select">
                     <option value="all">All categories</option>
                 </select>
@@ -742,15 +725,21 @@
                     <div id="reference-dialog-tools" class="reference-grid reference-dialog-tools"></div>
                 </div>
             </dialog>
+
+            <dialog id="tool-details-dialog" class="reference-dialog">
+                <div class="reference-dialog-panel">
+                    <div class="reference-dialog-head">
+                        <h3 id="tool-details-name" class="reference-dialog-title">Tool Name</h3>
+                        <button class="btn-terminal btn-small" type="button" onclick="closeToolDetailsDialog()">CLOSE</button>
+                    </div>
+                    <div id="tool-details-content" class="tool-details-content"></div>
+                </div>
+            </dialog>
         </div>
 
         <!-- Account Tab -->
         <div id="account-tab" class="tab-content">
             <h2 class="section-header">Account Section</h2>
-            <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
-                <button class="btn-terminal btn-small" type="button" onclick="refreshAccountActivity()">REFRESH ACTIVITY</button>
-                <button class="btn-terminal btn-small" type="button" onclick="logoutUser()">LOGOUT</button>
-            </div>
             <div class="dashboard-grid">
                 <div class="dashboard-card">
                     <div class="dashboard-label">Username</div>
@@ -808,7 +797,6 @@
                 <div class="tool-body">
                     <div class="activity-head">
                         <div id="activity-summary" class="activity-summary"></div>
-                        <button class="btn-terminal btn-small" type="button" onclick="refreshAdminActivity()">REFRESH LOGS</button>
                         <button class="btn-terminal btn-small" type="button" onclick="clearActivityLogs()">CLEAR LOGS</button>
                     </div>
                     <div class="activity-table-wrap">
@@ -829,14 +817,233 @@
             </div>
         </div>
 
+        <!-- Threat Correlation Dashboard Tab -->
+        <div id="correlation-tab" class="tab-content">
+            <h2 class="section-header">Real-Time Threat Correlation Dashboard</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Auto-correlate findings across tools. Link CVE → Domain → IP → ASN → Abuse History</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">🔗</span><h3 class="tool-title">Correlation Engine</h3></div>
+                <div class="tool-body">
+                    <label>Start with entity:</label>
+                    <input type="text" class="input-terminal" id="correlation-entity" placeholder="Domain, IP, CVE, or artifact">
+                    <button class="btn-terminal" onclick="startThreatCorrelation()" style="margin-top: 0.5rem;">CORRELATE THREATS</button>
+                    <div id="correlation-results" class="results-terminal"></div>
+                    <div id="correlation-graph" class="results-terminal" style="min-height: 300px; background: rgba(0,255,255,0.05); border: 1px solid #00ffff;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI-Powered OSINT Agent Tab -->
+        <div id="ai-agent-tab" class="tab-content">
+            <h2 class="section-header">AI-Powered OSINT Agent</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Natural language query interpreter. Auto-suggest recon workflows. Save playbooks.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">🤖</span><h3 class="tool-title">NLP Query Interpreter</h3></div>
+                <div class="tool-body">
+                    <div id="ai-agent-status" class="ai-agent-status">Status: Idle</div>
+                    <label>Describe your recon objective (natural language):</label>
+                    <textarea class="input-terminal" id="ai-query-input" placeholder="Example: Find all unpatched systems in the retail sector or domains exposing admin panels" style="min-height: 80px;"></textarea>
+                    <button class="btn-terminal" onclick="interpretOsintQuery()" style="margin-top: 0.5rem;">INTERPRET QUERY</button>
+                    <div id="ai-suggestions" class="results-terminal"></div>
+                </div>
+            </div>
+            <div class="tool-terminal" style="margin-top: 1.5rem;">
+                <div class="tool-header"><span class="tool-icon">📚</span><h3 class="tool-title">Saved Playbooks</h3></div>
+                <div class="tool-body">
+                    <select id="playbook-select" class="input-terminal">
+                        <option value="">Load a saved playbook...</option>
+                        <option value="recon-baseline">Recon Baseline</option>
+                        <option value="vuln-hunt">Vulnerability Hunt</option>
+                        <option value="api-exposure">API Exposure Hunt</option>
+                        <option value="cloud-assets">Cloud Asset Hunting</option>
+                    </select>
+                    <button class="btn-terminal" onclick="loadPlaybook()" style="margin-top: 0.5rem;">LOAD PLAYBOOK</button>
+                    <div id="playbook-results" class="results-terminal"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collaborative Intelligence Workspace Tab -->
+        <div id="collaborate-tab" class="tab-content">
+            <h2 class="section-header">Collaborative Intelligence Workspace</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Share dossiers. Real-time sync. Annotations. Audit trail.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">👥</span><h3 class="tool-title">Active Dossiers</h3></div>
+                <div class="tool-body">
+                    <div id="dossier-list" class="dashboard-grid"></div>
+                    <button class="btn-terminal" onclick="createNewDossier()" style="margin-top: 0.5rem;">NEW DOSSIER</button>
+                </div>
+            </div>
+            <div class="tool-terminal" style="margin-top: 1.5rem;">
+                <div class="tool-header"><span class="tool-icon">💬</span><h3 class="tool-title">Collaboration Log</h3></div>
+                <div class="tool-body">
+                    <button class="btn-terminal btn-small" type="button" onclick="loadCollaborationLog()" style="margin-bottom: 0.6rem;">REFRESH LOG</button>
+                    <div id="collab-log" class="results-terminal" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Export & Reporting Tab -->
+        <div id="export-tab" class="tab-content">
+            <h2 class="section-header">Advanced Export & Reporting</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Generate reports. Timeline viz. Risk scoring. MITRE ATT&CK mapping.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">📊</span><h3 class="tool-title">Report Generator</h3></div>
+                <div class="tool-body">
+                    <label>Report title:</label>
+                    <input type="text" class="input-terminal" id="report-title" placeholder="e.g., Threat Assessment: example.com">
+                    <label style="margin-top: 0.5rem;">Select data sources:</label>
+                    <div style="margin-top: 0.5rem;">
+                        <label><input type="checkbox" id="report-incidents" checked> Incidents & Findings</label><br>
+                        <label><input type="checkbox" id="report-cves" checked> CVE Analysis</label><br>
+                        <label><input type="checkbox" id="report-domains" checked> Domain & IP Intelligence</label><br>
+                        <label><input type="checkbox" id="report-timeline" checked> Timeline & Events</label><br>
+                        <label><input type="checkbox" id="report-mitre" checked> MITRE ATT&CK Mapping</label><br>
+                    </div>
+                    <button class="btn-terminal" onclick="generateReport()" style="margin-top: 1rem;">GENERATE REPORT</button>
+                    <div id="report-results" class="results-terminal"></div>
+                </div>
+            </div>
+            <div class="tool-terminal" style="margin-top: 1.5rem;">
+                <div class="tool-header"><span class="tool-icon">📥</span><h3 class="tool-title">Export Formats</h3></div>
+                <div class="tool-body">
+                    <button class="btn-terminal" onclick="exportReportFormat('pdf')">EXPORT PDF</button>
+                    <button class="btn-terminal" onclick="exportReportFormat('html')" style="margin-left: 0.5rem;">EXPORT HTML</button>
+                    <button class="btn-terminal" onclick="exportReportFormat('json')" style="margin-left: 0.5rem;">EXPORT JSON</button>
+                    <button class="btn-terminal" onclick="exportReportFormat('csv')" style="margin-left: 0.5rem;">EXPORT CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entity Relationship Graph Tab -->
+        <div id="graph-tab" class="tab-content">
+            <h2 class="section-header">Entity Relationship Graph Visualization</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Visual entity connections. Click to expand. Filter by relationship type.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">🕸️</span><h3 class="tool-title">Graph Builder</h3></div>
+                <div class="tool-body">
+                    <label>Start entity:</label>
+                    <input type="text" class="input-terminal" id="graph-entity" placeholder="Domain, IP, Person, Company...">
+                    <label style="margin-top: 0.5rem;">Depth:</label>
+                    <select id="graph-depth" class="input-terminal">
+                        <option value="1">1 hop</option>
+                        <option value="2" selected>2 hops</option>
+                        <option value="3">3 hops</option>
+                        <option value="4">4 hops</option>
+                    </select>
+                    <button class="btn-terminal" onclick="buildEntityGraph()" style="margin-top: 0.5rem;">BUILD GRAPH</button>
+                    <div id="graph-canvas" class="results-terminal" style="min-height: 500px; background: rgba(0,255,255,0.05); border: 1px solid #00ffff;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automated Monitoring Tab -->
+        <div id="monitor-tab" class="tab-content">
+            <h2 class="section-header">Automated Monitoring System</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Webhook integrations. Track target changes. Anomaly detection. Scheduled scans.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">📡</span><h3 class="tool-title">Monitored Targets</h3></div>
+                <div class="tool-body">
+                    <label>Add target to monitor:</label>
+                    <input type="text" class="input-terminal" id="monitor-target" placeholder="Domain, IP, or keyword">
+                    <label style="margin-top: 0.5rem;">Monitoring interval:</label>
+                    <select id="monitor-interval" class="input-terminal">
+                        <option value="hourly">Hourly</option>
+                        <option value="daily" selected>Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                    <button class="btn-terminal" onclick="addMonitorTarget()" style="margin-top: 0.5rem;">ADD MONITOR</button>
+                    <div id="monitor-list" class="results-terminal"></div>
+                </div>
+            </div>
+            <div class="tool-terminal" style="margin-top: 1.5rem;">
+                <div class="tool-header"><span class="tool-icon">🚨</span><h3 class="tool-title">Anomaly Alerts</h3></div>
+                <div class="tool-body">
+                    <div id="anomaly-alerts" class="results-terminal"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exploit Simulation Tab -->
+        <div id="exploit-tab" class="tab-content">
+            <h2 class="section-header">Integrated Exploit Simulation & Risk Scoring</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">CVE + CVSS + Exposed Service = Exploitation Probability. Link to POCs.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">⚔️</span><h3 class="tool-title">Exploit Risk Engine</h3></div>
+                <div class="tool-body">
+                    <label>Target entity:</label>
+                    <input type="text" class="input-terminal" id="exploit-target" placeholder="IP, Domain, or Service">
+                    <button class="btn-terminal" onclick="assessExploitRisk()" style="margin-top: 0.5rem;">ASSESS RISK</button>
+                    <div id="exploit-results" class="results-terminal"></div>
+                </div>
+            </div>
+            <div class="tool-terminal" style="margin-top: 1.5rem;">
+                <div class="tool-header"><span class="tool-icon">🎯</span><h3 class="tool-title">Exploitation Score</h3></div>
+                <div class="tool-body">
+                    <div id="exploit-score-chart" class="results-terminal" style="min-height: 200px;">Score visualization will appear here</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy-Preserving Aggregator Tab -->
+        <div id="aggregator-tab" class="tab-content">
+            <h2 class="section-header">Privacy-Preserving Multi-Source Aggregator</h2>
+            <p class="tool-desc" style="margin-bottom: 1.5rem;">Bulk analysis. Anonymized results. TOR/VPN masking. Differential privacy.</p>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">🔒</span><h3 class="tool-title">Bulk Data Aggregation</h3></div>
+                <div class="tool-body">
+                    <label>Upload IP/Domain list or paste batch data:</label>
+                    <textarea class="input-terminal" id="aggregator-input" placeholder="One entry per line. Paste IPs, domains, or hashes" style="min-height: 100px;"></textarea>
+                    <div style="margin-top: 0.5rem;">
+                        <label><input type="checkbox" id="aggregator-anonymize" checked> Anonymize results</label>
+                        <label><input type="checkbox" id="aggregator-differential-privacy"> Enable differential privacy</label>
+                    </div>
+                    <button class="btn-terminal" onclick="aggregatePrivacy()" style="margin-top: 0.5rem;">ANALYZE BATCH</button>
+                    <div id="aggregator-results" class="results-terminal"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Tab -->
+        <div id="account-tab" class="tab-content">
+            <h2 class="section-header">Account Controls & Security</h2>
+            <div class="tool-terminal">
+                <div class="tool-header"><span class="tool-icon">🔐</span><h3 class="tool-title">Two-Factor Authentication</h3></div>
+                <div class="tool-body">
+                    <p class="tool-desc" style="margin-bottom: 1rem;">Enhanced account protection with time-based OTP.</p>
+                    <button class="btn-terminal" onclick="setup2FA()">SETUP 2FA</button>
+                    <div id="2fa-setup-area" style="display:none; margin-top: 1rem; background: rgba(0,255,0,0.05); padding: 1rem; border: 1px solid var(--matrix-green);">
+                        <p style="margin-bottom: 0.5rem;">1. Scan the QR code with Google Authenticator or Authy:</p>
+                        <img id="2fa-qr-code" src="" style="background: white; padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem;" />
+                        <p style="margin-bottom: 0.5rem;">2. Enter the 6-digit code from your app to verify setup:</p>
+                        <input type="text" id="setup-2fa-token" class="input-terminal" placeholder="000000" style="width: 150px; display: inline-block;">
+                        <button class="btn-terminal btn-small" onclick="verifySetup2FA()">ENABLE</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tool-terminal" style="margin-top: 1.5rem;">
+                <div class="tool-header"><span class="tool-icon">🕸️</span><h3 class="tool-title">Tor Dark Web Routing</h3></div>
+                <div class="tool-body">
+                    <p class="tool-desc" style="margin-bottom: 1rem;">Route OSINT queries through SOCKS5 proxy to mask intelligence gathering origin.</p>
+                    <button class="btn-terminal" onclick="alert('Tor routing requires backend TOR_ENABLED=true in .env')">Proxy Configured on Backend</button>
+                </div>
+            </div>
+        </div>
+
         <footer>
-            <p class="footer-text">MATRIX OSINT - Neural Network Intelligence System v1.0</p>
-            <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">All systems operational | Secure connection established</p>
+            <p class="footer-text">MATRIX OSINT - Neural Network Intelligence System v2.0 - Enhanced</p>
+            <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">All 8 advanced features operational | Enterprise-grade intelligence platform</p>
         </footer>
     </div>
 
-    <script src="js/core-ui.js?v=20260316-01" defer></script>
-    <script src="matrix-osint-integrated.js?v=20260317-63" defer></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="js/core-ui.js?v=20260406-03" defer></script>
+    <script src="matrix-osint-integrated.js?v=20260406-06" defer></script>
+    <script src="js/advanced-features.js?v=20260406-01" defer></script>
 </body>
 </html>
 

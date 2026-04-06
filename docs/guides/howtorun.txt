@@ -1,0 +1,52 @@
+
+cd /d c:\Users\Potato\Desktop\Tool
+node backend\server.js
+
+Keep that window open. You will see:
+Matrix OSINT server running at http://localhost:3000
+
+On FIRST RUN, the admin password will be printed to console:
+Admin account created. Password: <random-string>
+Save this password!
+
+In browser, open:
+http://localhost:3000
+
+Login with:
+Username: admin
+Password: <copy from console above>
+
+---
+
+FASTER WAY (easier): double-click
+scripts\start-matrix-osint.bat
+
+---
+
+TO SET A CUSTOM ADMIN PASSWORD:
+
+Edit scripts\start-matrix-osint.bat and change the line to:
+set ADMIN_PASSWORD=your-secure-password-here
+node backend\server.js
+pause
+
+Then double-click the batch file.
+
+---
+
+OPTIONAL: ENABLE RICH PHONE LOOKUP DATA
+
+Edit scripts\start-matrix-osint.bat and set:
+set VERIPHONE_API_KEY=your-veriphone-api-key-here
+
+Then restart the server. Without this key, phone intelligence still works using
+the local parser and external lookup links.
+
+---
+
+TROUBLESHOOTING:
+
+If port 3000 is in use, check what's running:
+netstat -ano | findstr :3000
+
+DELETE DATA/MATRIX-OSINT.DB to reset everything (new admin password will be generated).

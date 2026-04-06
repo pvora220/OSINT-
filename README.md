@@ -8,23 +8,31 @@ This project is now configured to run on free hosting with a free public domain.
 Tool/
 	backend/
 		server.js
-		phone/
-			country-codes.json
-			phone-utils.js
+		services/
+			phone/
+				country-codes.json
+				phone-utils.js
 	frontend/
 		public/
+			data/
+				bug-bounty-dork-packs.json
+			js/
+				advanced-features.js
+				core-ui.js
 			matrix-osint-integrated.html
 			matrix-osint-integrated.css
 			matrix-osint-integrated.js
-			bug-bounty-dork-packs.json
 	data/
 		(local SQLite db files)
 	scripts/
 		start-matrix-osint.bat
+	deploy/
+		docker-compose.yml
+		Dockerfile
 	docs/
 		*.md / *.txt
 	package.json
-	render.yaml
+	render.yaml (kept at root for Render auto-detect)
 ```
 
 ## Best Free Domain Recommendation
@@ -105,3 +113,13 @@ node backend/server.js
 
 Open:
 - `http://localhost:3000`
+
+## 7. Docker Helpers
+
+From project root:
+
+```powershell
+npm run docker:up
+npm run docker:logs
+npm run docker:down
+```

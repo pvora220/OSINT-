@@ -4,8 +4,8 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: ""
+    startCommand: node backend/server.js
     autoDeploy: true
     envVars:
       - key: VERIPHONE_API_KEY

@@ -5,9 +5,20 @@
   "description": "Matrix OSINT integrated toolkit",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "docker:up": "docker compose -f deploy/docker-compose.yml up -d --build",
+    "docker:down": "docker compose -f deploy/docker-compose.yml down",
+    "docker:logs": "docker compose -f deploy/docker-compose.yml logs -f"
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.1",
+    "node-cron": "^4.2.1",
+    "otplib": "^13.4.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3",
+    "socks-proxy-agent": "^10.0.0"
   }
 }

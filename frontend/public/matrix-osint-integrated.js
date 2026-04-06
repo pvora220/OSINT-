@@ -3,260 +3,42 @@
             ? ['http://localhost:3000/api']
             : ['/api', 'http://localhost:3000/api'];
         const ACTIVITY_LIMIT = 500;
-        const THREAT_MAP_SOURCES = {
-            checkpoint: {
-                label: 'Check Point ThreatMap',
-                url: 'https://threatmap.checkpoint.com/',
-                embeddable: true
-            },
-            kaspersky: {
-                label: 'Kaspersky Cybermap',
-                url: 'https://cybermap.kaspersky.com/',
-                embeddable: false
-            }
-        };
-        const THREAT_MAP_SOUND_PREF_KEY = 'matrixThreatMapSound';
-        const BACKGROUND_MODE_PREF_KEY = 'matrixBackgroundMode';
-        const THREAT_MAP_SOURCE_PREF_KEY = 'matrixThreatMapSource';
+        const THREAT_MAP_URL = 'https://threatmap.checkpoint.com/';
+        const THREAT_MAP_LABEL = 'Check Point ThreatMap';
         const THREAT_MAP_LOG_LIMIT = 24;
-        const BUG_BOUNTY_PACKS_URL = 'bug-bounty-dork-packs.json?v=20260316-01';
+        const BUG_BOUNTY_PACKS_URL = 'data/bug-bounty-dork-packs.json?v=20260406-01';
         const BUG_BOUNTY_PANEL_STATE_KEY = 'matrixBugBountyPanelState';
         const BUG_BOUNTY_RESULTS_STATE_KEY = 'matrixBugBountyResultsState';
-        const AUTH_SESSION_STORAGE_KEY = 'matrixAuthSession';
         let currentSession = null;
         let sessionToken = null;
-        let currentLoginAt = null;
+        let tempLoginUsername = '';
+        let tempLoginPassword = '';
         let latestDatabaseStats = null;
         let authInitialized = false;
         let bugBountyDorkPacks = {};
+        
+        // Socket.IO Global Client
+        let socket;
+
+        function initSocket() {
+            if (window.io && !socket) {
+                socket = io(window.location.origin);
+                socket.on('system_alert', (data) => {
+                    const logs = document.getElementById('anomaly-alerts') || document.getElementById('collab-log');
+                    if (logs) {
+                        const div = document.createElement('div');
+                        div.style.cssText = 'margin: 0.5rem 0; padding: 0.5rem; border-left: 3px solid #ffaa00; background: rgba(255, 170, 0, 0.1); color: #ffaa00;';
+                        div.innerHTML = `<strong>[SYS ALERT]</strong> ${data.message} <br><span style="color:#00aaaa; font-size:0.8rem;">${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</span>`;
+                        logs.prepend(div);
+                    } else {
+                        console.log('SOCKET SYSTEM ALERT:', data);
+                    }
+                });
+            }
+        }
         let activeBugBountyTag = 'all';
         let persistedBugBountyPackId = '';
         let threatMapInitialized = false;
-
-        function persistAuthSession() {
-            try {
-                if (!sessionToken || !currentSession?.username) {
-                    window.localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
-                    return;
-                }
-
-                window.localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify({
-                    token: sessionToken,
-                    user: currentSession,
-                    loginAt: currentLoginAt || ''
-                }));
-            } catch (error) {
-                console.warn('Unable to persist auth session:', error);
-            }
-        }
-
-        function clearPersistedAuthSession() {
-            try {
-                window.localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
-            } catch (error) {
-                console.warn('Unable to clear auth session:', error);
-            }
-        }
-
-        function populateActivityTable(targetBodyId, logs, includeUsername = false) {
-            const body = document.getElementById(targetBodyId);
-            if (!body) {
-                return;
-            }
-
-            if (!Array.isArray(logs) || !logs.length) {
-                body.innerHTML = `<tr><td colspan="${includeUsername ? 5 : 4}">No activity recorded.</td></tr>`;
-                return;
-            }
-
-            body.innerHTML = logs.map(log => {
-                const columns = [
-                    `<td>${escapeHtml(log.timestamp ? new Date(log.timestamp).toLocaleString() : '--')}</td>`
-                ];
-
-                if (includeUsername) {
-                    columns.push(`<td>${escapeHtml(log.username || 'Unknown')}</td>`);
-                }
-
-                columns.push(`<td>${escapeHtml(log.action || '--')}</td>`);
-                columns.push(`<td>${escapeHtml(log.tool || '--')}</td>`);
-                columns.push(`<td>${escapeHtml(log.details || '--')}</td>`);
-
-                return `<tr>${columns.join('')}</tr>`;
-            }).join('');
-        }
-
-        function renderHomeAndDashboard() {
-            const isLoggedIn = !!currentSession?.username;
-            const isAdmin = currentSession?.role === 'admin';
-            const categoryCount = new Set(referenceTools.map(tool => tool.category)).size;
-
-            const setText = (id, value) => {
-                const node = document.getElementById(id);
-                if (node) {
-                    node.textContent = value;
-                }
-            };
-
-            setText('dashboard-user', isLoggedIn ? currentSession.username : 'Guest');
-            setText('dashboard-role', currentSession?.role || 'N/A');
-            setText('dashboard-reference-count', String(referenceTools.length || 0));
-            setText('dashboard-category-count', String(categoryCount || 0));
-            setText('dashboard-user-count', String(latestDatabaseStats?.users || 0));
-            setText('dashboard-activity-count', String(latestDatabaseStats?.activityLogs || 0));
-
-            setText('account-username', isLoggedIn ? currentSession.username : 'Guest');
-            setText('account-role', currentSession?.role || 'N/A');
-            setText('account-session-state', isLoggedIn ? 'Active' : 'Locked');
-            setText('account-login-time', currentLoginAt ? new Date(currentLoginAt).toLocaleString() : '--');
-
-            const adminPanel = document.getElementById('admin-activity-panel');
-            const adminNote = document.getElementById('admin-panel-note');
-            if (adminPanel) {
-                adminPanel.style.display = isAdmin ? 'block' : 'none';
-            }
-            if (adminNote) {
-                adminNote.textContent = isAdmin
-                    ? 'Admin monitoring and controls unlocked.'
-                    : 'Admin-only monitoring and controls. Login with an admin account to access this section.';
-            }
-        }
-
-        async function refreshActivityViews() {
-            const accountSummary = document.getElementById('account-activity-summary');
-            const adminSummary = document.getElementById('activity-summary');
-
-            if (!currentSession?.username) {
-                populateActivityTable('account-activity-body', [], false);
-                populateActivityTable('activity-log-body', [], true);
-                if (accountSummary) {
-                    accountSummary.textContent = 'Login required.';
-                }
-                if (adminSummary) {
-                    adminSummary.textContent = 'Admin login required.';
-                }
-                return;
-            }
-
-            try {
-                const data = await apiRequest(`/activity?limit=${ACTIVITY_LIMIT}`);
-                const logs = Array.isArray(data.logs) ? data.logs : [];
-                const myLogs = logs.filter(log => log.username === currentSession.username);
-                populateActivityTable('account-activity-body', myLogs, false);
-                if (accountSummary) {
-                    accountSummary.textContent = `${myLogs.length} activity event${myLogs.length === 1 ? '' : 's'} for ${currentSession.username}.`;
-                }
-
-                if (currentSession.role === 'admin') {
-                    populateActivityTable('activity-log-body', logs, true);
-                    if (adminSummary) {
-                        adminSummary.textContent = `${logs.length} total event${logs.length === 1 ? '' : 's'} in the activity log.`;
-                    }
-                } else {
-                    populateActivityTable('activity-log-body', [], true);
-                    if (adminSummary) {
-                        adminSummary.textContent = 'Admin login required.';
-                    }
-                }
-            } catch (error) {
-                populateActivityTable('account-activity-body', [], false);
-                populateActivityTable('activity-log-body', [], true);
-                if (accountSummary) {
-                    accountSummary.textContent = error.message || 'Unable to load activity.';
-                }
-                if (adminSummary) {
-                    adminSummary.textContent = error.message || 'Unable to load admin activity.';
-                }
-            }
-        }
-
-        async function refreshSessionViews() {
-            await updateDatabaseCount();
-            renderHomeAndDashboard();
-            await refreshActivityViews();
-        }
-
-        async function restorePersistedSession() {
-            try {
-                const raw = window.localStorage.getItem(AUTH_SESSION_STORAGE_KEY);
-                if (!raw) {
-                    return;
-                }
-
-                const stored = JSON.parse(raw);
-                if (!stored?.token) {
-                    clearPersistedAuthSession();
-                    return;
-                }
-
-                sessionToken = String(stored.token || '');
-                const data = await apiRequest('/auth/session', {
-                    headers: {
-                        'X-Session-Token': sessionToken
-                    }
-                });
-
-                currentSession = data.user || null;
-                currentLoginAt = data.loginAt || stored.loginAt || null;
-                persistAuthSession();
-            } catch (error) {
-                sessionToken = null;
-                currentSession = null;
-                currentLoginAt = null;
-                clearPersistedAuthSession();
-            }
-        }
-
-        async function logActivity(action, tool, details = '') {
-            if (!sessionToken || !currentSession?.username) {
-                return;
-            }
-
-            try {
-                await apiRequest('/activity', {
-                    method: 'POST',
-                    headers: {
-                        'X-Session-Token': sessionToken
-                    },
-                    body: JSON.stringify({ action, tool, details })
-                });
-                await refreshSessionViews();
-            } catch (error) {
-                console.warn('Activity log failed:', error.message || error);
-            }
-        }
-
-        async function clearActivityLogs() {
-            if (!currentSession?.username || currentSession.role !== 'admin' || !sessionToken) {
-                alert('> ISSUE: Admin access required');
-                return;
-            }
-
-            try {
-                await apiRequest('/activity', {
-                    method: 'DELETE',
-                    headers: {
-                        'X-Session-Token': sessionToken
-                    },
-                    body: JSON.stringify({ token: sessionToken })
-                });
-                await refreshSessionViews();
-            } catch (error) {
-                alert(`> ISSUE: ${error.message || 'Unable to clear activity logs'}`);
-            }
-        }
-
-        async function refreshAccountActivity() {
-            await refreshSessionViews();
-        }
-
-        async function refreshAdminActivity() {
-            await refreshSessionViews();
-        }
-
-        window.clearActivityLogs = clearActivityLogs;
-        window.refreshAccountActivity = refreshAccountActivity;
-        window.refreshAdminActivity = refreshAdminActivity;
 
         async function apiRequest(path, options = {}) {
             let lastNetworkError = null;
@@ -321,16 +103,31 @@
             const registerTab = document.getElementById('auth-tab-register');
             const loginForm = document.getElementById('auth-login-form');
             const registerForm = document.getElementById('auth-register-form');
+            const verify2faForm = document.getElementById('auth-2fa-verify-form');
 
             if (!loginTab || !registerTab || !loginForm || !registerForm) {
                 return;
             }
 
-            const showLogin = tabName !== 'register';
-            loginTab.classList.toggle('active', showLogin);
-            registerTab.classList.toggle('active', !showLogin);
+            const showLogin = tabName === 'login';
+            const showRegister = tabName === 'register';
+            const show2fa = tabName === '2fa';
+
+            loginTab.classList.toggle('active', showLogin || show2fa);
+            registerTab.classList.toggle('active', showRegister);
             loginForm.classList.toggle('active', showLogin);
-            registerForm.classList.toggle('active', !showLogin);
+            registerForm.classList.toggle('active', showRegister);
+            
+            if (verify2faForm) {
+                verify2faForm.classList.toggle('active', show2fa);
+            }
+            if (show2fa) {
+                loginTab.style.display = 'none';
+                registerTab.style.display = 'none';
+            } else {
+                loginTab.style.display = '';
+                registerTab.style.display = '';
+            }
             setAuthMessage('');
         }
 
@@ -351,8 +148,6 @@
                     ? `USER: ${currentSession.username}${currentSession.role ? ` | ROLE: ${currentSession.role}` : ''}`
                     : '';
             }
-
-            void refreshSessionViews();
         }
 
         async function updateDatabaseCount() {
@@ -392,14 +187,44 @@
                     body: JSON.stringify({ username, password })
                 });
 
+                if (data.require2FA) {
+                    tempLoginUsername = username;
+                    tempLoginPassword = password;
+                    switchAuthTab('2fa');
+                    return;
+                }
+
                 sessionToken = data.token || null;
                 currentSession = data.user || { username, role: 'analyst' };
-                currentLoginAt = data.loginAt || new Date().toISOString();
-                persistAuthSession();
                 setAuthMessage('Login successful.');
                 updateSessionUI();
             } catch (error) {
                 setAuthMessage(error.message || 'Login failed.', true);
+            }
+        }
+
+        async function handle2FAVerify(event) {
+            event.preventDefault();
+            const totpToken = String(document.getElementById('verify-2fa-token')?.value || '').trim();
+            if (!totpToken) {
+                setAuthMessage('Enter 2FA code.', true);
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username: tempLoginUsername, password: tempLoginPassword, totpToken })
+                });
+
+                sessionToken = data.token || null;
+                currentSession = data.user || { username: tempLoginUsername, role: 'analyst' };
+                tempLoginUsername = '';
+                tempLoginPassword = '';
+                setAuthMessage('Login successful.');
+                updateSessionUI();
+            } catch (error) {
+                setAuthMessage(error.message || 'Invalid 2FA code.', true);
             }
         }
 
@@ -419,20 +244,13 @@
             }
 
             try {
-                await apiRequest('/auth/register', {
-                    method: 'POST',
-                    body: JSON.stringify({ username, password, confirmPassword: confirm })
-                });
-
-                const loginData = await apiRequest('/auth/login', {
+                const data = await apiRequest('/auth/register', {
                     method: 'POST',
                     body: JSON.stringify({ username, password })
                 });
 
-                sessionToken = loginData.token || null;
-                currentSession = loginData.user || { username, role: 'user' };
-                currentLoginAt = loginData.loginAt || new Date().toISOString();
-                persistAuthSession();
+                sessionToken = data.token || null;
+                currentSession = data.user || { username, role: 'analyst' };
                 setAuthMessage('Account created.');
                 updateSessionUI();
             } catch (error) {
@@ -456,8 +274,6 @@
 
             sessionToken = null;
             currentSession = null;
-            currentLoginAt = null;
-            clearPersistedAuthSession();
             updateSessionUI();
             setAuthMessage('Logged out.');
         }
@@ -470,21 +286,52 @@
             try {
                 const loginForm = document.getElementById('auth-login-form');
                 const registerForm = document.getElementById('auth-register-form');
+                const verify2faForm = document.getElementById('auth-2fa-verify-form');
                 if (!loginForm || !registerForm) {
                     throw new Error('Authentication forms are missing from DOM.');
                 }
 
                 loginForm.addEventListener('submit', handleLogin);
                 registerForm.addEventListener('submit', handleRegistration);
+                if (verify2faForm) verify2faForm.addEventListener('submit', handle2FAVerify);
 
                 currentSession = null;
-                currentLoginAt = null;
-                await restorePersistedSession();
                 updateSessionUI();
+                await updateDatabaseCount();
+                initSocket(); // Initialize WebSocket when interface loads
                 authInitialized = true;
             } catch (error) {
                 console.error('Auth initialization failed:', error);
                 setAuthMessage('Unable to reach API. Run node backend/server.js and open http://localhost:3000', true);
+            }
+        }
+
+        async function setup2FA() {
+            try {
+                const data = await apiRequest('/auth/setup-2fa', {
+                    method: 'POST',
+                    headers: { 'X-Session-Token': sessionToken }
+                });
+                document.getElementById('2fa-qr-code').src = data.qrCodeUrl;
+                document.getElementById('2fa-setup-area').style.display = 'block';
+            } catch (error) {
+                alert('2FA Setup failed: ' + error.message);
+            }
+        }
+
+        async function verifySetup2FA() {
+            const token = document.getElementById('setup-2fa-token').value.trim();
+            if(!token) return alert('Enter the 6-digit code');
+            try {
+                await apiRequest('/auth/verify-setup-2fa', {
+                    method: 'POST',
+                    headers: { 'X-Session-Token': sessionToken },
+                    body: JSON.stringify({ token })
+                });
+                alert('2FA is now ENABLED for your account.');
+                document.getElementById('2fa-setup-area').style.display = 'none';
+            } catch (error) {
+                alert('Verification failed: ' + error.message);
             }
         }
 
@@ -2496,42 +2343,17 @@
                 return;
             }
 
-            const sourceSelect = document.getElementById('threat-map-source');
-            const backgroundSelect = document.getElementById('background-mode');
-            const soundToggle = document.getElementById('threat-map-sound-toggle');
             const statusNode = document.getElementById('threat-map-status');
             const frame = document.getElementById('threat-map-frame');
             const fallback = document.getElementById('threat-map-fallback');
-            const openLink = document.getElementById('threat-map-open-link');
             const logNode = document.getElementById('threat-map-log');
             const backgroundThreatMap = document.getElementById('background-threat-map');
-            const statsNode = document.getElementById('kaspersky-stats');
-            const legendNode = document.getElementById('kaspersky-legend');
-            const countryName = document.getElementById('kaspersky-country-name');
-            const countryRank = document.getElementById('kaspersky-country-rank');
 
-            if (!sourceSelect || !backgroundSelect || !soundToggle || !statusNode || !frame || !fallback || !openLink || !logNode) {
+            if (!statusNode || !frame || !fallback || !logNode) {
                 return;
             }
 
             threatMapInitialized = true;
-
-            const readPref = (key, fallbackValue) => {
-                try {
-                    const stored = window.localStorage.getItem(key);
-                    return stored == null ? fallbackValue : stored;
-                } catch {
-                    return fallbackValue;
-                }
-            };
-
-            const writePref = (key, value) => {
-                try {
-                    window.localStorage.setItem(key, value);
-                } catch {
-                    // Ignore localStorage failures.
-                }
-            };
 
             const logThreatMap = (message, level = 'info') => {
                 const entry = document.createElement('div');
@@ -2549,303 +2371,32 @@
                 statusNode.textContent = message;
             };
 
-            const updateOpenLink = source => {
-                openLink.href = source.url;
-                openLink.textContent = `Open ${source.label} in new tab`;
-                openLink.classList.remove('disabled');
-            };
+            document.body.dataset.bgMode = 'matrix';
+            if (backgroundThreatMap && backgroundThreatMap.getAttribute('src') !== THREAT_MAP_URL) {
+                backgroundThreatMap.setAttribute('src', THREAT_MAP_URL);
+            }
 
-            const setInAppOnlyLinkState = label => {
-                openLink.href = '#';
-                openLink.textContent = label;
-                openLink.classList.add('disabled');
-            };
-
-            const kasperskyCountries = [
-                { name: 'SRI LANKA', rank: 37 },
-                { name: 'INDIA', rank: 7 },
-                { name: 'SINGAPORE', rank: 15 },
-                { name: 'GERMANY', rank: 9 },
-                { name: 'BRAZIL', rank: 12 },
-                { name: 'JAPAN', rank: 10 }
-            ];
-            const kasperskyBaseStats = [
-                { code: 'oas', count: 1184 },
-                { code: 'ods', count: 942 },
-                { code: 'mav', count: 603 },
-                { code: 'wav', count: 1288 },
-                { code: 'ids', count: 447 },
-                { code: 'vul', count: 319 },
-                { code: 'kas', count: 701 },
-                { code: 'rmw', count: 284 }
-            ];
-            let kasperskyTelemetryTimer = null;
-            let kasperskyAnimationFrame = 0;
-            let kasperskyPulseTick = 0;
-
-            const drawKasperskyFallbackBackdrop = (pulsePhase = 0) => {
-                const canvas = document.getElementById('threat-map-fallback-canvas');
-                if (!canvas) {
-                    return;
-                }
-
-                const rect = canvas.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                const width = Math.max(1, Math.floor(rect.width * dpr));
-                const height = Math.max(1, Math.floor(rect.height * dpr));
-                if (!width || !height) {
-                    return;
-                }
-                if (canvas.width !== width || canvas.height !== height) {
-                    canvas.width = width;
-                    canvas.height = height;
-                }
-
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    return;
-                }
-
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = 'rgba(1, 10, 8, 0.9)';
-                ctx.fillRect(0, 0, width, height);
-
-                ctx.strokeStyle = 'rgba(63, 154, 119, 0.12)';
-                ctx.lineWidth = 1;
-                const stepX = Math.max(40, Math.floor(width / 18));
-                const stepY = Math.max(34, Math.floor(height / 12));
-                for (let x = 0; x <= width; x += stepX) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, height);
-                    ctx.stroke();
-                }
-                for (let y = 0; y <= height; y += stepY) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(width, y);
-                    ctx.stroke();
-                }
-
-                const nodes = [
-                    [0.18, 0.29], [0.26, 0.67], [0.44, 0.31], [0.54, 0.35], [0.58, 0.69], [0.69, 0.46], [0.73, 0.57], [0.84, 0.37], [0.82, 0.78]
-                ];
-                const pulseRadius = (6.5 + Math.sin(pulsePhase) * 2.2) * dpr;
-                nodes.forEach(([nx, ny], index) => {
-                    const px = nx * width;
-                    const py = ny * height;
-                    ctx.beginPath();
-                    ctx.fillStyle = 'rgba(117, 255, 201, 0.85)';
-                    ctx.arc(px, py, 2.2 * dpr, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.strokeStyle = 'rgba(90, 214, 165, 0.3)';
-                    ctx.arc(px, py, pulseRadius + ((index % 3) * 1.2 * dpr), 0, Math.PI * 2);
-                    ctx.stroke();
-                });
-            };
-
-            const stopKasperskyTelemetry = () => {
-                if (kasperskyTelemetryTimer) {
-                    clearInterval(kasperskyTelemetryTimer);
-                    kasperskyTelemetryTimer = null;
-                }
-                if (kasperskyAnimationFrame) {
-                    cancelAnimationFrame(kasperskyAnimationFrame);
-                    kasperskyAnimationFrame = 0;
-                }
-            };
-
-            const renderKasperskyTelemetrySnapshot = (announce = false) => {
-                const country = kasperskyCountries[Math.floor(Math.random() * kasperskyCountries.length)] || kasperskyCountries[0];
-                if (countryName) {
-                    countryName.textContent = country.name;
-                }
-                if (countryRank) {
-                    countryRank.textContent = String(country.rank);
-                }
-                if (statsNode) {
-                    const jittered = kasperskyBaseStats.map(item => ({
-                        code: item.code,
-                        count: Math.max(1, item.count + Math.round((Math.random() - 0.5) * 220))
-                    }));
-                    statsNode.innerHTML = jittered
-                        .map(item => `<div class="kaspersky-stat-row"><span class="code ${item.code}">${item.code.toUpperCase()}</span><span>${item.count}</span></div>`)
-                        .join('');
-                }
-                if (announce) {
-                    logThreatMap(`Kaspersky telemetry mirror refreshed: focus ${country.name}.`, 'info');
-                }
-            };
-
-            const startKasperskyTelemetry = () => {
-                stopKasperskyTelemetry();
-                renderKasperskyTelemetrySnapshot(true);
-
-                const animate = () => {
-                    kasperskyPulseTick += 0.12;
-                    drawKasperskyFallbackBackdrop(kasperskyPulseTick);
-                    if (resolveSource(sourceSelect.value) === 'kaspersky') {
-                        kasperskyAnimationFrame = requestAnimationFrame(animate);
-                    }
-                };
-
-                kasperskyAnimationFrame = requestAnimationFrame(animate);
-                kasperskyTelemetryTimer = setInterval(() => {
-                    if (resolveSource(sourceSelect.value) !== 'kaspersky') {
-                        stopKasperskyTelemetry();
-                        return;
-                    }
-                    renderKasperskyTelemetrySnapshot(true);
-                }, 4500);
-            };
-
-            const renderKasperskyInfo = () => {
-                if (legendNode) {
-                    legendNode.innerHTML = [
-                        '<div class="kaspersky-legend-item oas">OAS</div>',
-                        '<div class="kaspersky-legend-item ods">ODS</div>',
-                        '<div class="kaspersky-legend-item mav">MAV</div>',
-                        '<div class="kaspersky-legend-item wav">WAV</div>',
-                        '<div class="kaspersky-legend-item ids">IDS</div>',
-                        '<div class="kaspersky-legend-item vul">VUL</div>',
-                        '<div class="kaspersky-legend-item kas">KAS</div>',
-                        '<div class="kaspersky-legend-item rmw">RMW</div>'
-                    ].join('');
-                }
-
-                if (countryName) {
-                    countryName.textContent = 'SRI LANKA';
-                }
-                if (countryRank) {
-                    countryRank.textContent = '37';
-                }
-                if (statsNode) {
-                    statsNode.innerHTML = kasperskyBaseStats
-                        .map(item => `<div class="kaspersky-stat-row"><span class="code ${item.code}">${item.code.toUpperCase()}</span><span>${item.count}</span></div>`)
-                        .join('');
-                }
-
-                drawKasperskyFallbackBackdrop();
-            };
-
-            const setSoundState = enabled => {
-                soundToggle.textContent = `Sound: ${enabled ? 'ON' : 'OFF'}`;
-                soundToggle.setAttribute('aria-pressed', String(enabled));
-                writePref(THREAT_MAP_SOUND_PREF_KEY, enabled ? 'on' : 'off');
-            };
-
-            const resolveSource = key => THREAT_MAP_SOURCES[key] ? key : 'checkpoint';
-
-            const syncBackgroundThreatMap = sourceKey => {
-                if (!backgroundThreatMap) {
-                    return;
-                }
-                if (document.body.dataset.bgMode !== 'threat') {
-                    return;
-                }
-                const source = THREAT_MAP_SOURCES[sourceKey];
-                const bgSource = source && source.embeddable ? source : THREAT_MAP_SOURCES.checkpoint;
-                if (backgroundThreatMap.getAttribute('src') !== bgSource.url) {
-                    backgroundThreatMap.setAttribute('src', bgSource.url);
-                }
-            };
-
-            const setBackgroundMode = (mode, announce = true) => {
-                const allowed = mode === 'threat' || mode === 'grid' ? mode : 'matrix';
-                backgroundSelect.value = allowed;
-                document.body.dataset.bgMode = allowed;
-                writePref(BACKGROUND_MODE_PREF_KEY, allowed);
-                syncBackgroundThreatMap(resolveSource(sourceSelect.value));
-
-                if (announce) {
-                    const modeLabel = allowed === 'matrix' ? 'Matrix Rain' : allowed === 'threat' ? 'Live Threat Map' : 'Cyber Grid';
-                    logThreatMap(`Background set to ${modeLabel}.`, 'info');
-                }
-            };
-
-            const setSource = (sourceKey, announce = true) => {
-                const resolved = resolveSource(sourceKey);
-                const source = THREAT_MAP_SOURCES[resolved];
-
-                sourceSelect.value = resolved;
-                updateOpenLink(source);
-                writePref(THREAT_MAP_SOURCE_PREF_KEY, resolved);
-                syncBackgroundThreatMap(resolved);
-
-                if (source.embeddable) {
-                    stopKasperskyTelemetry();
-                    fallback.classList.remove('active');
-                    fallback.setAttribute('aria-hidden', 'true');
-                    frame.style.visibility = 'visible';
-                    frame.setAttribute('src', source.url);
-                    setStatus(`Monitoring ${source.label} feed...`);
-                    if (announce) {
-                        logThreatMap(`${source.label} linked in workspace.`, 'success');
-                    }
-                    return;
-                }
-
-                frame.removeAttribute('src');
-                frame.style.visibility = 'hidden';
-                fallback.classList.add('active');
-                fallback.setAttribute('aria-hidden', 'false');
-                setInAppOnlyLinkState('In-app telemetry mirror active');
-                renderKasperskyInfo();
-                startKasperskyTelemetry();
-                setStatus(`${source.label} is running in in-app telemetry mirror mode.`);
-                if (announce) {
-                    logThreatMap(`${source.label} loaded in local replica mode with no external redirect.`, 'warn');
-                }
-            };
+            fallback.classList.remove('active');
+            fallback.setAttribute('aria-hidden', 'true');
+            frame.style.visibility = 'visible';
+            frame.setAttribute('src', THREAT_MAP_URL);
+            setStatus(`Monitoring ${THREAT_MAP_LABEL} feed...`);
+            logThreatMap(`${THREAT_MAP_LABEL} linked in workspace.`, 'success');
 
             frame.addEventListener('load', () => {
-                const source = THREAT_MAP_SOURCES[resolveSource(sourceSelect.value)];
-                if (source.embeddable) {
-                    setStatus(`${source.label} feed connected.`);
-                    logThreatMap(`${source.label} feed responded.`, 'success');
-                }
+                setStatus(`${THREAT_MAP_LABEL} feed connected.`);
+                logThreatMap(`${THREAT_MAP_LABEL} feed responded.`, 'success');
             });
 
             frame.addEventListener('error', () => {
                 fallback.classList.add('active');
                 fallback.setAttribute('aria-hidden', 'false');
                 frame.style.visibility = 'hidden';
-                setStatus('Remote map failed to load. Open in new tab for direct access.');
+                setStatus('Remote map failed to load. Fallback overlay enabled.');
                 logThreatMap('Embedded feed failed to load; fallback enabled.', 'error');
             });
 
-            sourceSelect.addEventListener('change', () => {
-                setSource(sourceSelect.value);
-            });
-
-            window.addEventListener('resize', () => {
-                if (resolveSource(sourceSelect.value) === 'kaspersky') {
-                    drawKasperskyFallbackBackdrop();
-                }
-            });
-
-            backgroundSelect.addEventListener('change', () => {
-                setBackgroundMode(backgroundSelect.value);
-            });
-
-            soundToggle.addEventListener('click', () => {
-                const enabled = soundToggle.getAttribute('aria-pressed') !== 'true';
-                setSoundState(enabled);
-                logThreatMap(`Threat feed audio ${enabled ? 'enabled' : 'muted'}.`, enabled ? 'success' : 'warn');
-            });
-
-            const storedSound = readPref(THREAT_MAP_SOUND_PREF_KEY, 'on') !== 'off';
-            const storedBackground = readPref(BACKGROUND_MODE_PREF_KEY, 'matrix');
-            const storedSource = readPref(THREAT_MAP_SOURCE_PREF_KEY, 'checkpoint');
-
-            setSoundState(storedSound);
-            setBackgroundMode(storedBackground, false);
-            setSource(storedSource, false);
-            logThreatMap(
-                `INIT CHECK -> source=${resolveSource(storedSource)} | background=${document.body.dataset.bgMode || 'matrix'} | sound=${storedSound ? 'on' : 'off'}`,
-                'info'
-            );
+            logThreatMap('INIT CHECK -> source=checkpoint | background=matrix', 'info');
         }
 
         function copyToClipboard(text) {
