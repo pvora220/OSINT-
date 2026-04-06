@@ -828,14 +828,15 @@ async function handleApi(req, res, pathname, searchParams) {
             return;
         }
 
-        const user = db.prepare('SELECT id, username FROM users WHERE username = ? LIMIT 1').get(targetUsername);
-        if (!user) {
-            sendJson(res, 404, { error: 'User not found.' });
-            return;
-        }
-
         const hashedPassword = hashPassword(newPassword);
-        db.prepare('UPDATE users SET password = ?, role = ? WHERE username = ?').run(hashedPassword, 'admin', targetUsername);
+        const user = db.prepare('SELECT id, username FROM users WHERE username = ? LIMIT 1').get(targetUsername);
+        if (user) {
+            db.prepare('UPDATE users SET password = ?, role = ? WHERE username = ?').run(hashedPassword, 'admin', targetUsername);
+        } else {
+            const now = new Date().toISOString();
+            db.prepare('INSERT INTO users (username, password, role, created_at) VALUES (?, ?, ?, ?)')
+                .run(targetUsername, hashedPassword, 'admin', now);
+        }
         sendJson(res, 200, { ok: true, username: targetUsername });
         return;
     }
