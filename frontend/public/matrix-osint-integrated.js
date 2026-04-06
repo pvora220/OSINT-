@@ -101,22 +101,27 @@
         function switchAuthTab(tabName) {
             const loginTab = document.getElementById('auth-tab-login');
             const registerTab = document.getElementById('auth-tab-register');
+            const adminResetTab = document.getElementById('auth-tab-admin-reset');
             const loginForm = document.getElementById('auth-login-form');
             const registerForm = document.getElementById('auth-register-form');
+            const adminResetForm = document.getElementById('auth-admin-reset-form');
             const verify2faForm = document.getElementById('auth-2fa-verify-form');
 
-            if (!loginTab || !registerTab || !loginForm || !registerForm) {
+            if (!loginTab || !registerTab || !adminResetTab || !loginForm || !registerForm || !adminResetForm) {
                 return;
             }
 
             const showLogin = tabName === 'login';
             const showRegister = tabName === 'register';
+            const showAdminReset = tabName === 'admin-reset';
             const show2fa = tabName === '2fa';
 
             loginTab.classList.toggle('active', showLogin || show2fa);
             registerTab.classList.toggle('active', showRegister);
+            adminResetTab.classList.toggle('active', showAdminReset);
             loginForm.classList.toggle('active', showLogin);
             registerForm.classList.toggle('active', showRegister);
+            adminResetForm.classList.toggle('active', showAdminReset);
             
             if (verify2faForm) {
                 verify2faForm.classList.toggle('active', show2fa);
@@ -124,9 +129,11 @@
             if (show2fa) {
                 loginTab.style.display = 'none';
                 registerTab.style.display = 'none';
+                adminResetTab.style.display = 'none';
             } else {
                 loginTab.style.display = '';
                 registerTab.style.display = '';
+                adminResetTab.style.display = '';
             }
             setAuthMessage('');
         }
