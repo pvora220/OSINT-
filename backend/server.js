@@ -694,7 +694,15 @@ async function handleApi(req, res, pathname, searchParams) {
         const body = await parseJsonBody(req);
         const username = String(body.username || '').trim();
         const password = String(body.password || '');
-        const confirmPassword = String(body.confirmPassword || '');
+        // Accept legacy/front-end variants to prevent cached clients from failing registration.
+        const confirmPassword = String(
+            body.confirmPassword
+            ?? body.confirm
+            ?? body.passwordConfirm
+            ?? body.password_confirmation
+            ?? body.password
+            ?? ''
+        );
 
         if (!username || !password || !confirmPassword) {
             sendJson(res, 400, { error: 'All registration fields are required.' });
