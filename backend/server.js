@@ -25,6 +25,7 @@ const PUBLIC_DIR = path.join(PROJECT_ROOT, 'frontend', 'public');
 const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 const DB_PATH = path.join(DATA_DIR, 'matrix-osint.db');
 const VERIPHONE_API_KEY = String(process.env.VERIPHONE_API_KEY || '').trim();
+const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || 'admin').trim() || 'admin';
 const ADMIN_RESET_KEY = String(process.env.ADMIN_RESET_KEY || '').trim();
 const API_CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -410,15 +411,17 @@ function initDatabase() {
     ensureUserColumns();
     scrubLegacyOwnerReferences();
 
-    // Seed admin once, but always honor ADMIN_PASSWORD when provided.
+    // Seed admin once, but always honor ADMIN_USERNAME/ADMIN_PASSWORD when provided.
     const adminPassword = String(process.env.ADMIN_PASSWORD || '').trim();
-    const existing = db.prepare('SELECT id, password FROM users WHERE username = ? LIMIT 1').get('admin');
+    const existing = db.prepare('SELECT id, password FROM users WHERE username = ? LIMIT 1').get(ADMIN_USERNAME);
 
     if (existing) {
         if (adminPassword) {
             const updatedHash = hashPassword(adminPassword);
-            db.prepare('UPDATE users SET password = ?, role = ? WHERE username = ?').run(updatedHash, 'admin', 'admin');
-            console.log('Admin account password updated from ADMIN_PASSWORD.');
+            db.prepare('UPDATE users SET password = ?, role = ? WHERE username = ?').run(updatedHash, 'admin', ADMIN_USERNAME);
+            console.log(`Admin account (${ADMIN_USERNAME}) password updated from ADMIN_PASSWORD.`);
+        } else {
+            db.prepare('UPDATE users SET role = ? WHERE username = ?').run('admin', ADMIN_USERNAME);
         }
     } else {
         const now = new Date().toISOString();
@@ -427,8 +430,8 @@ function initDatabase() {
         db.prepare(`
             INSERT INTO users (username, password, role, created_at)
             VALUES (?, ?, ?, ?)
-        `).run('admin', hashedPassword, 'admin', now);
-        console.log(`Admin account created. Password: ${finalAdminPassword}`);
+        `).run(ADMIN_USERNAME, hashedPassword, 'admin', now);
+        console.log(`Admin account (${ADMIN_USERNAME}) created. Password: ${finalAdminPassword}`);
     }
 
     const insertTool = db.prepare(`

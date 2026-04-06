@@ -94,13 +94,14 @@ After first deploy, your free live domain will be:
 ## 4. Environment Variables (Optional)
 
 In Render service settings -> Environment:
+- `ADMIN_USERNAME` (optional, defaults to `admin`)
 - `ADMIN_PASSWORD` (recommended for stable admin login)
 - `ADMIN_RESET_KEY` (optional recovery key for password reset)
 - `VERIPHONE_API_KEY` (optional)
 
 App works without them; related tools degrade gracefully.
 
-If `ADMIN_PASSWORD` is set, the admin account will use that password on startup. If it is not set, the app generates a one-time password and prints it in the server logs on first boot.
+If `ADMIN_USERNAME` is set, that account is treated as admin on startup. If `ADMIN_PASSWORD` is set, that admin account will use the provided password on startup. If `ADMIN_PASSWORD` is not set, the app generates a one-time password and prints it in the server logs on first boot.
 
 If you ever lose admin access on Render, set `ADMIN_RESET_KEY` and call `POST /api/admin/reset-password` with that key to set a new admin password.
 
