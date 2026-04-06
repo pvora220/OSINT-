@@ -8,5 +8,9 @@ services:
     startCommand: node backend/server.js
     autoDeploy: true
     envVars:
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_RESET_KEY
+        sync: false
       - key: VERIPHONE_API_KEY
         sync: false

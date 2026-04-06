@@ -135,8 +135,12 @@
             const authOverlay = document.getElementById('auth-overlay');
             const sessionBar = document.getElementById('session-bar');
             const sessionInfo = document.getElementById('session-info');
+            const adminNavButton = document.getElementById('nav-admin-tab');
+            const adminActivityPanel = document.getElementById('admin-activity-panel');
+            const adminTab = document.getElementById('admin-tab');
 
             const loggedIn = !!(currentSession && currentSession.username);
+            const isAdmin = !!(loggedIn && currentSession.role === 'admin');
             if (authOverlay) {
                 authOverlay.classList.toggle('hidden', loggedIn);
             }
@@ -147,6 +151,15 @@
                 sessionInfo.textContent = loggedIn
                     ? `USER: ${currentSession.username}${currentSession.role ? ` | ROLE: ${currentSession.role}` : ''}`
                     : '';
+            }
+            if (adminNavButton) {
+                adminNavButton.classList.toggle('hidden', !isAdmin);
+            }
+            if (adminActivityPanel) {
+                adminActivityPanel.style.display = isAdmin ? 'block' : 'none';
+            }
+            if (adminTab) {
+                adminTab.classList.toggle('hidden', !isAdmin);
             }
         }
 
@@ -244,17 +257,128 @@
             }
 
             try {
-                const data = await apiRequest('/auth/register', {
+                await apiRequest('/auth/register', {
                     method: 'POST',
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, confirmPassword: confirm })
                 });
 
-                sessionToken = data.token || null;
-                currentSession = data.user || { username, role: 'analyst' };
-                setAuthMessage('Account created.');
-                updateSessionUI();
+                const loginUsernameInput = document.getElementById('login-username');
+                const loginPasswordInput = document.getElementById('login-password');
+                if (loginUsernameInput) {
+                    loginUsernameInput.value = username;
+                }
+                if (loginPasswordInput) {
+                    loginPasswordInput.value = '';
+                }
+
+                const registerPasswordInput = document.getElementById('register-password');
+                const registerConfirmInput = document.getElementById('register-confirm-password');
+                if (registerPasswordInput) {
+                    registerPasswordInput.value = '';
+                }
+                if (registerConfirmInput) {
+                    registerConfirmInput.value = '';
+                }
+
+                switchAuthTab('login');
+                setAuthMessage('Account created. Please login with your new credentials.');
             } catch (error) {
                 setAuthMessage(error.message || 'Registration failed.', true);
+            }
+        }
+
+        async function handleAdminResetPassword(event) {
+            event.preventDefault();
+
+            const resetKey = String(document.getElementById('admin-reset-key')?.value || '').trim();
+            const username = String(document.getElementById('admin-reset-username')?.value || 'admin').trim() || 'admin';
+            const newPassword = String(document.getElementById('admin-reset-password')?.value || '');
+
+            if (!resetKey || !newPassword) {
+                setAuthMessage('Reset key and new password are required.', true);
+                return;
+            }
+
+            try {
+                await apiRequest('/admin/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'X-Admin-Reset-Key': resetKey
+                    },
+                    body: JSON.stringify({
+                        resetKey,
+                        username,
+                        newPassword
+                    })
+                });
+
+                const loginUsernameInput = document.getElementById('login-username');
+                const loginPasswordInput = document.getElementById('login-password');
+                if (loginUsernameInput) {
+                    loginUsernameInput.value = username;
+                }
+                if (loginPasswordInput) {
+                    loginPasswordInput.value = '';
+                }
+
+                const resetKeyInput = document.getElementById('admin-reset-key');
+                const resetPasswordInput = document.getElementById('admin-reset-password');
+                if (resetKeyInput) {
+                    resetKeyInput.value = '';
+                }
+                if (resetPasswordInput) {
+                    resetPasswordInput.value = '';
+                }
+
+                switchAuthTab('login');
+                setAuthMessage('Admin password reset. Please login with the new password.');
+            } catch (error) {
+                setAuthMessage(error.message || 'Admin password reset failed.', true);
+            }
+        }
+
+        async function resetAdminPasswordFromPanel() {
+            const resetKey = String(document.getElementById('admin-panel-reset-key')?.value || '').trim();
+            const username = String(document.getElementById('admin-panel-reset-username')?.value || 'admin').trim() || 'admin';
+            const newPassword = String(document.getElementById('admin-panel-reset-password')?.value || '');
+            const statusNode = document.getElementById('admin-reset-status');
+
+            if (!resetKey || !newPassword) {
+                if (statusNode) {
+                    statusNode.innerHTML = '<div class="result-line"><span class="result-key">ISSUE</span><span class="result-value">Reset key and new password are required.</span></div>';
+                }
+                return;
+            }
+
+            try {
+                await apiRequest('/admin/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'X-Admin-Reset-Key': resetKey
+                    },
+                    body: JSON.stringify({
+                        resetKey,
+                        username,
+                        newPassword
+                    })
+                });
+
+                if (statusNode) {
+                    statusNode.innerHTML = '<div class="result-line"><span class="result-key">SUCCESS</span><span class="result-value">Admin password updated. Re-login with the new password.</span></div>';
+                }
+
+                const loginUsernameInput = document.getElementById('login-username');
+                const loginPasswordInput = document.getElementById('login-password');
+                if (loginUsernameInput) {
+                    loginUsernameInput.value = username;
+                }
+                if (loginPasswordInput) {
+                    loginPasswordInput.value = '';
+                }
+            } catch (error) {
+                if (statusNode) {
+                    statusNode.innerHTML = `<div class="result-line"><span class="result-key">ISSUE</span><span class="result-value">${escapeHtml(error.message || 'Admin password reset failed.')}</span></div>`;
+                }
             }
         }
 
@@ -286,6 +410,7 @@
             try {
                 const loginForm = document.getElementById('auth-login-form');
                 const registerForm = document.getElementById('auth-register-form');
+                const adminResetForm = document.getElementById('auth-admin-reset-form');
                 const verify2faForm = document.getElementById('auth-2fa-verify-form');
                 if (!loginForm || !registerForm) {
                     throw new Error('Authentication forms are missing from DOM.');
@@ -293,6 +418,9 @@
 
                 loginForm.addEventListener('submit', handleLogin);
                 registerForm.addEventListener('submit', handleRegistration);
+                if (adminResetForm) {
+                    adminResetForm.addEventListener('submit', handleAdminResetPassword);
+                }
                 if (verify2faForm) verify2faForm.addEventListener('submit', handle2FAVerify);
 
                 currentSession = null;

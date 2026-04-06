@@ -25,10 +25,11 @@ const PUBLIC_DIR = path.join(PROJECT_ROOT, 'frontend', 'public');
 const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 const DB_PATH = path.join(DATA_DIR, 'matrix-osint.db');
 const VERIPHONE_API_KEY = String(process.env.VERIPHONE_API_KEY || '').trim();
+const ADMIN_RESET_KEY = String(process.env.ADMIN_RESET_KEY || '').trim();
 const API_CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,X-Session-Token',
+    'Access-Control-Allow-Headers': 'Content-Type,X-Session-Token,X-Admin-Reset-Key',
     'Access-Control-Max-Age': '86400'
 };
 
@@ -409,17 +410,25 @@ function initDatabase() {
     ensureUserColumns();
     scrubLegacyOwnerReferences();
 
-    // Only seed admin if it doesn't exist (one-time only, no forced override)
-    const existing = db.prepare('SELECT 1 FROM users WHERE username = ? LIMIT 1').get('admin');
-    if (!existing) {
+    // Seed admin once, but always honor ADMIN_PASSWORD when provided.
+    const adminPassword = String(process.env.ADMIN_PASSWORD || '').trim();
+    const existing = db.prepare('SELECT id, password FROM users WHERE username = ? LIMIT 1').get('admin');
+
+    if (existing) {
+        if (adminPassword) {
+            const updatedHash = hashPassword(adminPassword);
+            db.prepare('UPDATE users SET password = ?, role = ? WHERE username = ?').run(updatedHash, 'admin', 'admin');
+            console.log('Admin account password updated from ADMIN_PASSWORD.');
+        }
+    } else {
         const now = new Date().toISOString();
-        const adminPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
-        const hashedPassword = hashPassword(adminPassword);
+        const finalAdminPassword = adminPassword || crypto.randomBytes(16).toString('hex');
+        const hashedPassword = hashPassword(finalAdminPassword);
         db.prepare(`
             INSERT INTO users (username, password, role, created_at)
             VALUES (?, ?, ?, ?)
         `).run('admin', hashedPassword, 'admin', now);
-        console.log(`Admin account created. Password: ${adminPassword}`);
+        console.log(`Admin account created. Password: ${finalAdminPassword}`);
     }
 
     const insertTool = db.prepare(`
@@ -787,6 +796,39 @@ async function handleApi(req, res, pathname, searchParams) {
         const sessionToken = body.token || req.headers['x-session-token'] || '';
         destroySession(sessionToken);
         sendJson(res, 200, { ok: true });
+        return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/admin/reset-password') {
+        if (!ADMIN_RESET_KEY) {
+            sendJson(res, 503, { error: 'Admin reset key is not configured.' });
+            return;
+        }
+
+        const body = await parseJsonBody(req);
+        const resetKey = String(body.resetKey || req.headers['x-admin-reset-key'] || '').trim();
+        const targetUsername = String(body.username || 'admin').trim() || 'admin';
+        const newPassword = String(body.newPassword || '').trim();
+
+        if (!resetKey || resetKey !== ADMIN_RESET_KEY) {
+            sendJson(res, 403, { error: 'Invalid admin reset key.' });
+            return;
+        }
+
+        if (!newPassword || newPassword.length < 6) {
+            sendJson(res, 400, { error: 'New password must be at least 6 characters.' });
+            return;
+        }
+
+        const user = db.prepare('SELECT id, username FROM users WHERE username = ? LIMIT 1').get(targetUsername);
+        if (!user) {
+            sendJson(res, 404, { error: 'User not found.' });
+            return;
+        }
+
+        const hashedPassword = hashPassword(newPassword);
+        db.prepare('UPDATE users SET password = ?, role = ? WHERE username = ?').run(hashedPassword, 'admin', targetUsername);
+        sendJson(res, 200, { ok: true, username: targetUsername });
         return;
     }
 

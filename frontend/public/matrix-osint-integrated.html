@@ -37,6 +37,15 @@
                 <button type="submit" class="btn-terminal" style="width: 100%;">CREATE ACCOUNT</button>
             </form>
 
+            <form id="auth-admin-reset-form" class="auth-form" action="javascript:void(0);">
+                <h3 style="color: var(--matrix-green); text-align: center; margin-bottom: 1rem;">Admin Recovery</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem; text-align: center; line-height: 1.5;">Use this only if Render is configured with <span style="color: var(--primary);">ADMIN_RESET_KEY</span>.</p>
+                <input id="admin-reset-key" type="password" class="input-terminal auth-input" placeholder="Reset key" autocomplete="off">
+                <input id="admin-reset-username" type="text" class="input-terminal auth-input" placeholder="Username to reset (default: admin)" value="admin" autocomplete="username">
+                <input id="admin-reset-password" type="password" class="input-terminal auth-input" placeholder="New admin password" autocomplete="new-password">
+                <button type="submit" class="btn-terminal" style="width: 100%;">RESET ADMIN PASSWORD</button>
+            </form>
+
             <form id="auth-2fa-verify-form" class="auth-form" action="javascript:void(0);">
                 <h3 style="color: var(--matrix-green); text-align: center; margin-bottom: 1rem;">2FA Required</h3>
                 <input id="verify-2fa-token" type="text" class="input-terminal auth-input" placeholder="6-digit code" autocomplete="one-time-code">
@@ -82,7 +91,7 @@
             <div class="rail-group-label">REFERENCE & ACCESS</div>
             <button class="terminal-tab" data-icon="☍" onclick="switchTab(11, 'reference')"><span class="tab-icon" aria-hidden="true">☍</span><span class="tab-label">Reference Database</span></button>
             <button class="terminal-tab" data-icon="◍" onclick="switchTab(12, 'account')"><span class="tab-icon" aria-hidden="true">◍</span><span class="tab-label">Account</span></button>
-            <button class="terminal-tab" data-icon="⛨" onclick="switchTab(13, 'admin')"><span class="tab-icon" aria-hidden="true">⛨</span><span class="tab-label">Admin Panel</span></button>
+            <button id="nav-admin-tab" class="terminal-tab" data-icon="⛨" onclick="switchTab(13, 'admin')"><span class="tab-icon" aria-hidden="true">⛨</span><span class="tab-label">Admin Panel</span></button>
         </div>
 
         <!-- Home Tab -->
@@ -789,6 +798,20 @@
         <div id="admin-tab" class="tab-content">
             <h2 class="section-header">Admin Panel</h2>
             <p id="admin-panel-note" style="color: var(--text-secondary); margin-bottom: 1rem;">Admin-only monitoring and controls.</p>
+            <div class="tool-terminal" style="margin-bottom: 2rem;">
+                <div class="tool-header">
+                    <span class="tool-icon">🔒</span>
+                    <h3 class="tool-title">Admin Password Reset</h3>
+                </div>
+                <div class="tool-body">
+                    <p class="tool-desc" style="margin-bottom: 1rem;">Use the recovery key only when `ADMIN_RESET_KEY` is configured in Render.</p>
+                    <input id="admin-panel-reset-key" type="password" class="input-terminal" placeholder="Reset key" autocomplete="off">
+                    <input id="admin-panel-reset-username" type="text" class="input-terminal" placeholder="Username to reset (default: admin)" value="admin" style="margin-top: 0.5rem;" autocomplete="username">
+                    <input id="admin-panel-reset-password" type="password" class="input-terminal" placeholder="New admin password" style="margin-top: 0.5rem;" autocomplete="new-password">
+                    <button class="btn-terminal" type="button" style="margin-top: 0.75rem;" onclick="resetAdminPasswordFromPanel()">RESET PASSWORD</button>
+                    <div id="admin-reset-status" class="results-terminal" style="margin-top: 0.75rem;"></div>
+                </div>
+            </div>
             <div id="admin-activity-panel" class="tool-terminal" style="display: none; margin-bottom: 2rem;">
                 <div class="tool-header">
                     <span class="tool-icon">LOG</span>
@@ -1042,7 +1065,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="js/core-ui.js?v=20260406-03" defer></script>
-    <script src="matrix-osint-integrated.js?v=20260406-06" defer></script>
+    <script src="matrix-osint-integrated.js?v=20260406-09" defer></script>
     <script src="js/advanced-features.js?v=20260406-01" defer></script>
 </body>
 </html>
